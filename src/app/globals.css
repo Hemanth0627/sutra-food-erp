@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. Neutral "industrial" greys, a saffron brand accent (food), restrained status
+ * colours. Chart series use the validated categorical order (blue, orange, aqua) from the
+ * data-viz reference palette with their own dark-mode steps.
+ */
+:root {
+  --background: #f7f7f5;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f1f1ef;
+  --secondary-foreground: #27272a;
+  --muted: #f1f1ef;
+  --muted-foreground: #66665f;
+  --accent: #f4f3ef;
+  --accent-foreground: #18181b;
+  --brand: #b45309;
+  --brand-foreground: #ffffff;
+  --brand-soft: #fef3c7;
+  --destructive: #c62828;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-soft: #dcfce7;
+  --warning: #a16207;
+  --warning-soft: #fef9c3;
+  --danger-soft: #fee2e2;
+  --info: #1d4ed8;
+  --info-soft: #dbeafe;
+  --border: #e4e4e0;
+  --input: #dcdcd7;
+  --ring: #b45309;
+  --sidebar: #fbfbfa;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-grid: #e7e6e1;
+  --chart-axis: #66665f;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #0c0c0d;
+  --foreground: #f0efec;
+  --card: #151517;
+  --card-foreground: #f0efec;
+  --popover: #18181b;
+  --popover-foreground: #f0efec;
+  --primary: #f0efec;
+  --primary-foreground: #18181b;
+  --secondary: #222225;
+  --secondary-foreground: #e7e5e4;
+  --muted: #1d1d20;
+  --muted-foreground: #a3a39b;
+  --accent: #232327;
+  --accent-foreground: #f0efec;
+  --brand: #f59e0b;
+  --brand-foreground: #18181b;
+  --brand-soft: #3a2a0b;
+  --destructive: #ef5350;
+  --destructive-foreground: #18181b;
+  --success: #4ade80;
+  --success-soft: #0f2a19;
+  --warning: #facc15;
+  --warning-soft: #2e2608;
+  --danger-soft: #3a1414;
+  --info: #93c5fd;
+  --info-soft: #102340;
+  --border: #2a2a2e;
+  --input: #34343a;
+  --ring: #f59e0b;
+  --sidebar: #111113;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-grid: #2a2a2e;
+  --chart-axis: #a3a39b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Recharts: recessive axes and grid in both themes */
+.recharts-cartesian-grid line {
+  stroke: var(--chart-grid);
+}
+.recharts-cartesian-axis-tick text {
+  fill: var(--chart-axis);
+  font-size: 11px;
+}
+.recharts-default-tooltip {
+  border-radius: 8px !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
