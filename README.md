@@ -270,7 +270,7 @@ The app is a standard Next.js Node server plus PostgreSQL.
    ```
 4. Optional demo data: `npx prisma db seed` (on an empty database only).
 
-**Vercel / similar:** set the build command to `prisma migrate deploy && next build`. PDFKit and ExcelJS are configured as server-external packages and run in the Node.js runtime (already declared on the export routes). **Docker / VM:** run the commands above behind a reverse proxy with HTTPS. Secure cookies are on by default in production. Do not deploy with the demo accounts enabled for real data.
+**Vercel:** `vercel.json` already sets the build command (`prisma migrate deploy && prisma db seed && next build`; the seed loads the demo data on the first deploy and skips afterwards) and the Singapore region; only `DATABASE_URL`, `SESSION_SECRET` and `SEED_DEMO_PASSWORD` need to be added as environment variables. Use a direct (non-pooled) connection string for Neon. PDFKit and ExcelJS are configured as server-external packages and run in the Node.js runtime (already declared on the export routes). **Docker / VM:** run the commands above behind a reverse proxy with HTTPS. Secure cookies are on by default in production. Do not deploy with the demo accounts enabled for real data.
 
 ## Project structure
 
