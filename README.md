@@ -360,21 +360,18 @@ public/                         manifest, service worker, icons
 
 ## Commit, push and deploy
 
-Nothing in this round has been committed, pushed or deployed. To publish it yourself:
+The code lives at https://github.com/Hemanth0627/sutra-food-erp and is deployed to https://sutra-food-erp.vercel.app (Vercel project `sutra-food-erp`, Neon PostgreSQL in Singapore). The Vercel project is not connected to GitHub, so a push does not redeploy by itself. To publish further changes:
 
 ```bash
-# review and commit
-git status
 git add -A
-git commit -m "Add 3D factory digital twin, purchase orders, order amendment, costing page, search and notifications"
-
-# push (this repo's remotes: origin and nitt-assignment)
+git commit -m "Describe the change"
 git push origin main
-git push nitt-assignment main      # if you also publish to the NITT-Assignment repository
 
-# deploy to Vercel (the project is not connected to GitHub, so deploy from the CLI)
-npx vercel --prod
+# deploy from a clean clone so only committed files are uploaded
+git clone https://github.com/Hemanth0627/sutra-food-erp.git /tmp/sutra-deploy && cd /tmp/sutra-deploy
+npx vercel link --yes --project sutra-food-erp
+rm -f .env.local                      # created by `vercel link`; never upload it
+npx vercel deploy --prod --yes
 ```
 
-The Vercel build runs `prisma migrate deploy` first, so the new `purchase_orders` migration is applied to the Neon database automatically; the seed is skipped on an already-seeded database (run `npm run demo:extras` against Neon if you want the demo purchase order there too).
-
+The Vercel build runs `prisma migrate deploy` first, so new migrations reach the Neon database automatically; the seed skips an already-seeded database (run `npm run demo:extras` with `DATABASE_URL` pointing at Neon if you want the demo purchase order there too).
