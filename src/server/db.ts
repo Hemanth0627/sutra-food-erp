@@ -17,5 +17,6 @@ export type Tx = Prisma.TransactionClient;
  * balance + document + audit log) goes through here, so any failure rolls everything back.
  */
 export function withTransaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
-  return prisma.$transaction(fn, { maxWait: 10_000, timeout: 30_000 });
+  // Generous timeout: a posting is ~10–80 queries and cloud databases add network latency per query.
+  return prisma.$transaction(fn, { maxWait: 15_000, timeout: 60_000 });
 }

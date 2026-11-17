@@ -258,7 +258,7 @@ export async function seedMasterData(prisma: PrismaClient, demoPassword: string)
       });
     }
     await tx.auditLog.create({ data: { userId: actors.admin.id, action: "stock.opening", entityType: "Inventory", entityId: "OPENING", summary: "Posted opening stock for all items (fictional seed data)" } });
-  });
+  }, { maxWait: 15_000, timeout: 120_000 }); // ~70 queries: allow for a remote (cloud) database
 
   // BOMs (activated after opening stock so the standard cost snapshot uses the opening rates).
   const products = await prisma.product.findMany();
