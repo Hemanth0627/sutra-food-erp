@@ -1,5 +1,7 @@
 # Sutra ERP: food manufacturing ERP prototype
 
+**Live demo:** https://sutra-food-erp.vercel.app (sign in with any demo account below, password `Demo@1234`; all data is fictional)
+
 Sutra is an ERP and production-management system for a (fictional) South Indian packaged-snack manufacturer, *Thenmalai Snack Works Pvt. Ltd.*, which makes murukku, mixture, banana chips, potato chips and traditional sweets.
 
 The core idea: **a transaction is entered once, at its source, and everything else updates from it.** Purchases, production runs, dispatches, returns and adjustments all post to a single, append-only **inventory ledger**. Stock balances, weighted-average costs, costing snapshots, GST invoices, receivables, dashboards and reports are all read from posted records. Nothing is hard-coded.
