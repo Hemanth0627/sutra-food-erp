@@ -113,6 +113,13 @@ enum SupplyType {
   INTER_STATE
 }
 
+enum PurchaseOrderStatus {
+  OPEN
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
 enum PaymentMode {
   CASH
   UPI
@@ -150,6 +157,7 @@ model User {
   creditNotes       CreditNote[]
   adjustments       StockAdjustment[]
   purchaseReturns   PurchaseReturn[]
+  purchaseOrders    PurchaseOrder[]
 }
 
 model Session {
@@ -220,9 +228,10 @@ model Unit {
   /// Multiplier to the dimension's base unit (kg, litre, piece). g = 0.001, ml = 0.001.
   toBase    Decimal       @db.Decimal(18, 6)
 
-  items         Item[]
-  bomItems      BomItem[]
-  purchaseItems PurchaseItem[]
+  items              Item[]
+  bomItems           BomItem[]
+  purchaseItems      PurchaseItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 }
 
 model ProductCategory {
@@ -256,6 +265,7 @@ model Item {
   productionMaterial ProductionMaterial[]
   productionOutputs  ProductionOutput[]
   adjustments        StockAdjustment[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@index([kind])
 }
@@ -316,8 +326,8 @@ model Customer {
 }
 
 model Supplier {
-  id               String     @id @default(cuid())
-  code             String     @unique
+  id               String          @id @default(cuid())
+  code             String          @unique
   name             String
   gstin            String?
   phone            String
@@ -325,12 +335,13 @@ model Supplier {
   addressLine      String
   city             String
   state            String
-  stateCode        String     @db.VarChar(2)
-  paymentTermsDays Int        @default(30)
-  isActive         Boolean    @default(true)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  stateCode        String          @db.VarChar(2)
+  paymentTermsDays Int             @default(30)
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   purchases        Purchase[]
+  purchaseOrders   PurchaseOrder[]
 }
 
 // ─────────────────────────────── Inventory ───────────────────────────────
@@ -400,6 +411,8 @@ model Purchase {
   id                String   @id @default(cuid())
   purchaseNo        String   @unique
   supplierId        String
+  /// Optional purchase order this goods receipt was made against.
+  purchaseOrderId   String?
   supplierInvoiceNo String
   invoiceDate       DateTime
   receivedDate      DateTime
@@ -410,38 +423,43 @@ model Purchase {
   createdById       String
   createdAt         DateTime @default(now())
 
-  supplier  Supplier         @relation(fields: [supplierId], references: [id])
-  createdBy User             @relation(fields: [createdById], references: [id])
-  items     PurchaseItem[]
-  returns   PurchaseReturn[]
+  supplier      Supplier         @relation(fields: [supplierId], references: [id])
+  purchaseOrder PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
+  createdBy     User             @relation(fields: [createdById], references: [id])
+  items         PurchaseItem[]
+  returns       PurchaseReturn[]
 
   @@unique([supplierId, supplierInvoiceNo])
   @@index([invoiceDate])
+  @@index([purchaseOrderId])
 }
 
 model PurchaseItem {
-  id           String    @id @default(cuid())
-  purchaseId   String
-  itemId       String
+  id                  String    @id @default(cuid())
+  purchaseId          String
+  itemId              String
   /// Quantity and rate as invoiced, in the purchase unit.
-  quantity     Decimal   @db.Decimal(14, 3)
-  unitId       String
-  rate         Decimal   @db.Decimal(14, 4)
+  quantity            Decimal   @db.Decimal(14, 3)
+  unitId              String
+  rate                Decimal   @db.Decimal(14, 4)
   /// Converted to the item's stock unit.
-  stockQty     Decimal   @db.Decimal(14, 3)
-  stockRate    Decimal   @db.Decimal(18, 6)
-  taxableValue Decimal   @db.Decimal(14, 2)
-  gstRate      Decimal   @default(0) @db.Decimal(5, 2)
-  taxAmount    Decimal   @default(0) @db.Decimal(14, 2)
-  lineTotal    Decimal   @db.Decimal(14, 2)
-  batchNo      String?
-  expiryDate   DateTime?
-  returnedQty  Decimal   @default(0) @db.Decimal(14, 3)
+  stockQty            Decimal   @db.Decimal(14, 3)
+  stockRate           Decimal   @db.Decimal(18, 6)
+  taxableValue        Decimal   @db.Decimal(14, 2)
+  gstRate             Decimal   @default(0) @db.Decimal(5, 2)
+  taxAmount           Decimal   @default(0) @db.Decimal(14, 2)
+  lineTotal           Decimal   @db.Decimal(14, 2)
+  batchNo             String?
+  expiryDate          DateTime?
+  returnedQty         Decimal   @default(0) @db.Decimal(14, 3)
+  /// PO line this receipt line fulfils (set when the purchase is received against a PO).
+  purchaseOrderItemId String?
 
-  purchase Purchase         @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
-  item     Item             @relation(fields: [itemId], references: [id])
-  unit     Unit             @relation(fields: [unitId], references: [id])
-  returns  PurchaseReturn[]
+  purchase          Purchase           @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+  item              Item               @relation(fields: [itemId], references: [id])
+  unit              Unit               @relation(fields: [unitId], references: [id])
+  returns           PurchaseReturn[]
 
   @@index([purchaseId])
   @@index([itemId])
@@ -460,6 +478,55 @@ model PurchaseReturn {
   purchase       Purchase     @relation(fields: [purchaseId], references: [id])
   purchaseItem   PurchaseItem @relation(fields: [purchaseItemId], references: [id])
   createdBy      User         @relation(fields: [createdById], references: [id])
+}
+
+/// Purchase order raised to a supplier before goods arrive. It never moves stock itself: stock only
+/// changes when a goods receipt (Purchase) is posted against it, which also advances receivedQty.
+model PurchaseOrder {
+  id              String              @id @default(cuid())
+  poNo            String              @unique
+  supplierId      String
+  orderDate       DateTime
+  expectedDate    DateTime?
+  status          PurchaseOrderStatus @default(OPEN)
+  taxableTotal    Decimal             @db.Decimal(14, 2)
+  taxTotal        Decimal             @db.Decimal(14, 2)
+  grandTotal      Decimal             @db.Decimal(14, 2)
+  notes           String?
+  cancelledReason String?
+  createdById     String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy User                @relation(fields: [createdById], references: [id])
+  items     PurchaseOrderItem[]
+  receipts  Purchase[]
+
+  @@index([status])
+  @@index([supplierId])
+  @@index([orderDate])
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(cuid())
+  purchaseOrderId String
+  itemId          String
+  /// Ordered quantity and rate, in the PO unit.
+  quantity        Decimal @db.Decimal(14, 3)
+  unitId          String
+  rate            Decimal @db.Decimal(14, 4)
+  gstRate         Decimal @default(0) @db.Decimal(5, 2)
+  taxableValue    Decimal @db.Decimal(14, 2)
+  /// Received so far, in the PO unit. Updated only by goods-receipt postings.
+  receivedQty     Decimal @default(0) @db.Decimal(14, 3)
+
+  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  item          Item           @relation(fields: [itemId], references: [id])
+  unit          Unit           @relation(fields: [unitId], references: [id])
+  receiptLines  PurchaseItem[]
+
+  @@unique([purchaseOrderId, itemId])
 }
 
 // ─────────────────────────────── BOM ───────────────────────────────

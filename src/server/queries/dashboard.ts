@@ -1,12 +1,12 @@
 import { D, Dec, max, pctOf, round2, sum } from "@/lib/decimal";
-import { addDays, addIstMonths, formatMonthKey, monthKey, startOfIstDay, startOfIstMonth } from "@/lib/dates";
+import { addDays, addIstMonths, formatMonthKey, isoDateIst, monthKey, startOfIstDay, startOfIstMonth } from "@/lib/dates";
 import { prisma } from "../db";
 import { orderAvailability } from "../services/availability";
 import { customerBalances, openInvoices } from "./receivables";
 
-export async function salesKpis(now = new Date()) {
+export async function salesKpis(now = new Date(), from?: Date) {
   const today = startOfIstDay(now);
-  const month = startOfIstMonth(now);
+  const month = from ?? startOfIstMonth(now);
   const [todaySales, monthSales, totalOrders, pendingOrders, monthInvoices] = await Promise.all([
     prisma.invoice.aggregate({ where: { status: "ISSUED", invoiceDate: { gte: today } }, _sum: { taxableTotal: true, grandTotal: true } }),
     prisma.invoice.aggregate({ where: { status: "ISSUED", invoiceDate: { gte: month } }, _sum: { taxableTotal: true, grandTotal: true, cgstTotal: true, sgstTotal: true, igstTotal: true } }),
@@ -40,8 +40,8 @@ export async function stockSummary() {
   };
 }
 
-export async function productionKpis(now = new Date()) {
-  const month = startOfIstMonth(now);
+export async function productionKpis(now = new Date(), from?: Date) {
+  const month = from ?? startOfIstMonth(now);
   const [completed, active, flagged] = await Promise.all([
     prisma.productionRun.findMany({ where: { status: "COMPLETED", completedAt: { gte: month } }, select: { actualGoodOutput: true, plannedOutput: true, totalCost: true } }),
     prisma.productionRun.count({ where: { status: { in: ["PLANNED", "IN_PROGRESS"] } } }),
@@ -57,8 +57,8 @@ export async function productionKpis(now = new Date()) {
   return { monthOutput: good, monthPlanned: planned, monthYieldPct: pctOf(good, planned, 2), runsCompleted: completed.length, activeRuns: active, flaggedRuns: flagged };
 }
 
-export async function receivablesKpis(now = new Date()) {
-  const month = startOfIstMonth(now);
+export async function receivablesKpis(now = new Date(), from?: Date) {
+  const month = from ?? startOfIstMonth(now);
   const [balances, collected, open] = await Promise.all([
     customerBalances(),
     prisma.payment.aggregate({ where: { paymentDate: { gte: month } }, _sum: { amount: true }, _count: true }),
@@ -85,6 +85,30 @@ export async function monthlySales(months = 6, now = new Date()) {
     month: formatMonthKey(k),
     sales: Number(sum(invoices.filter((i) => monthKey(i.invoiceDate) === k).map((i) => i.taxableTotal)).toFixed(2)),
   }));
+}
+
+/**
+ * Stock value moved in and out of the ledger per day (or per month for periods over 45 days),
+ * across raw materials, packaging and finished goods. Values, not quantities, so units can be mixed.
+ */
+export async function inventoryMovement(from: Date, now = new Date()) {
+  const rows = await prisma.inventoryTransaction.findMany({
+    where: { txnDate: { gte: from, lte: now }, movementType: { not: "OPENING_STOCK" } },
+    select: { txnDate: true, value: true },
+  });
+  const monthly = now.getTime() - from.getTime() > 45 * 86400000;
+  const keyOf = (d: Date) => (monthly ? monthKey(d) : isoDateIst(d));
+  const keys: string[] = [];
+  if (monthly) for (let m = startOfIstMonth(from); m <= now; m = addIstMonths(m, 1)) keys.push(monthKey(m));
+  else for (let d = startOfIstDay(from); d <= now; d = addDays(d, 1)) keys.push(isoDateIst(d));
+  return keys.map((k) => {
+    const inPeriod = rows.filter((r) => keyOf(r.txnDate) === k);
+    return {
+      label: monthly ? formatMonthKey(k) : k.slice(8, 10) + " " + new Date(k + "T00:00:00Z").toLocaleString("en-IN", { month: "short", timeZone: "UTC" }),
+      inward: Number(sum(inPeriod.filter((r) => D(r.value).gt(0)).map((r) => r.value)).toFixed(2)),
+      outward: Number(sum(inPeriod.filter((r) => D(r.value).lt(0)).map((r) => D(r.value).abs())).toFixed(2)),
+    };
+  });
 }
 
 /** Planned vs good output for recent completed runs. */

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import {
-  ArrowRight, BadgeCheck, Boxes, Calculator, ClipboardCheck, Factory, FileSpreadsheet, Gauge, Layers, Lock, ReceiptIndianRupee,
+  ArrowRight, BadgeCheck, Box, Boxes, Calculator, ClipboardCheck, Factory, FileSpreadsheet, Gauge, Layers, Lock, ReceiptIndianRupee,
   ScrollText, ShieldCheck, Smartphone, Truck, WifiOff,
 } from "lucide-react";
 import { BrandMark, BrandName } from "@/components/app/brand";
 import { HeroIntro } from "@/components/landing/hero-intro";
-import { ScrollStory } from "@/components/landing/scroll-story";
 import { VantaHero } from "@/components/landing/vanta-hero";
+import { FactoryTwin } from "@/components/factory/factory-twin";
 import { getCurrentUser } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -55,11 +55,19 @@ const PILLARS = [
   },
 ];
 
-const STACK = ["Next.js 15 App Router", "React 19", "TypeScript", "PostgreSQL 17", "Prisma ORM", "Tailwind CSS 4", "shadcn/ui patterns", "Recharts", "React Hook Form + Zod", "Three.js", "Vanta.js", "GSAP ScrollTrigger", "PDFKit", "ExcelJS", "Vitest", "PWA offline queue"];
+const STACK = ["Next.js 15 App Router", "React 19", "TypeScript", "PostgreSQL 17", "Prisma ORM", "Tailwind CSS 4", "shadcn/ui patterns", "Recharts", "React Hook Form + Zod", "Three.js digital twin", "Vanta.js", "GSAP", "PDFKit", "ExcelJS", "Vitest", "PWA offline queue"];
+
+/** The whole business in three steps: what a first-time visitor needs in the first 30 seconds. */
+const STEPS = [
+  { icon: Smartphone, step: "1 · Sell", title: "Orders come in from the field", body: "Salesmen book orders on their phones. The admin approves them against live finished-goods stock and sees any shortage before promising delivery." },
+  { icon: Factory, step: "2 · Make", title: "The factory makes to a recipe", body: "Each production run follows a bill of materials. Flour, oil, spice and packaging leave stock, packets arrive, and waste or overuse beyond ±3% is flagged." },
+  { icon: ReceiptIndianRupee, step: "3 · Bill", title: "The office invoices and collects", body: "GST invoices (CGST + SGST or IGST), dispatch, payments, receivables and audit reports, all built from the same posted records." },
+];
 
 export default async function LandingPage() {
   const user = await getCurrentUser();
   const cta = user ? { href: "/dashboard", label: "Open your dashboard" } : { href: "/login", label: "Sign in" };
+  const liveFactory = user ? "/factory" : "/login?next=/factory";
   return (
     <div className="dark bg-[#0c0c0d] text-zinc-100">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:text-black">Skip to content</a>
@@ -67,7 +75,8 @@ export default async function LandingPage() {
         <nav className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4" aria-label="Primary">
           <Link href="/" className="flex items-center gap-2.5"><BrandMark className="size-6" /><BrandName className="text-[15px] text-white" /></Link>
           <div className="ml-auto hidden items-center gap-6 text-sm text-zinc-400 md:flex">
-            <a href="#workflow" className="hover:text-white">Workflow</a>
+            <a href="#how-it-works" className="hover:text-white">How it works</a>
+            <a href="#factory-tour" className="hover:text-white">Factory tour</a>
             <a href="#production" className="hover:text-white">Production</a>
             <a href="#inventory" className="hover:text-white">Inventory</a>
             <a href="#finance" className="hover:text-white">Finance</a>
@@ -81,25 +90,53 @@ export default async function LandingPage() {
         <VantaHero className="relative flex min-h-[100svh] items-center overflow-hidden">
           <HeroIntro className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-16 pt-28">
             <p data-intro className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-300">
-              Food manufacturing ERP · South Indian snacks
+              ERP for a South Indian snack factory
             </p>
             <h1 data-intro className="mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl">
-              From flour sack to GST invoice, one ledger.
+              Sutra runs a snack factory, from flour sack to GST invoice.
             </h1>
-            <p data-intro className="mt-6 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-              Sutra connects sales orders, purchases, BOM-driven production, inventory, costing, GST invoicing and receivables. Every transaction is entered once, at its source, and flows everywhere else automatically.
+            <p data-intro className="mt-6 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+              One system for the whole plant. Salesmen take orders on their phones, the factory makes murukku to a recipe, every stock movement lands in one ledger, and the office issues GST invoices and tracks who has paid.
             </p>
             <div data-intro className="mt-8 flex flex-wrap gap-3">
-              <Link href={cta.href} className="inline-flex h-11 items-center gap-2 rounded-md bg-amber-500 px-5 text-sm font-semibold text-black transition-colors hover:bg-amber-400">{cta.label} <ArrowRight className="size-4" /></Link>
-              <a href="#workflow" className="inline-flex h-11 items-center rounded-md border border-white/15 px-5 text-sm font-medium text-white transition-colors hover:bg-white/5">See how it flows</a>
+              <Link href={liveFactory} className="inline-flex h-11 items-center gap-2 rounded-md bg-amber-500 px-5 text-sm font-semibold text-black transition-colors hover:bg-amber-400"><Box className="size-4" /> Explore the live 3D factory</Link>
+              <a href="#factory-tour" className="inline-flex h-11 items-center gap-2 rounded-md border border-white/15 px-5 text-sm font-medium text-white transition-colors hover:bg-white/5">1-minute factory tour <ArrowRight className="size-4" /></a>
             </div>
             <dl data-intro className="mt-14 grid max-w-2xl grid-cols-2 gap-6 border-t border-white/10 pt-6 sm:grid-cols-4">
-              {[["5", "roles with server-side permissions"], ["10", "stock movement types, one ledger"], ["18", "reports in CSV, Excel and PDF"], ["25/25", "benchmark checks automated"]].map(([v, l]) => (
+              {[["5", "roles with server-side permissions"], ["13", "factory departments in a live 3D twin"], ["18", "reports in CSV, Excel and PDF"], ["25/25", "benchmark checks automated"]].map(([v, l]) => (
                 <div key={l}><dt className="sr-only">{l}</dt><dd><span className="block text-2xl font-semibold text-white">{v}</span><span className="text-xs text-zinc-500">{l}</span></dd></div>
               ))}
             </dl>
           </HeroIntro>
         </VantaHero>
+
+        <section id="how-it-works" className="mx-auto max-w-6xl scroll-mt-16 px-4 pt-24" aria-labelledby="how-title">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">What Sutra does</p>
+          <h2 id="how-title" className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-white">Sell, make, bill. Every step updates the next.</h2>
+          <ol className="mt-10 grid gap-3 md:grid-cols-3">
+            {STEPS.map((s) => (
+              <li key={s.step} className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+                <s.icon className="size-5 text-amber-400" />
+                <div className="mt-4 text-xs font-medium uppercase tracking-wider text-zinc-500">{s.step}</div>
+                <h3 className="mt-1 text-base font-medium text-white">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="factory-tour" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24" aria-labelledby="tour-title">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">Factory tour</p>
+          <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <h2 id="tour-title" className="max-w-2xl text-3xl font-semibold tracking-tight text-white">Walk the factory in one minute</h2>
+              <p className="mt-3 max-w-2xl text-zinc-400">Thirteen departments, laid out in the order material flows: stores on the left, the murukku line in the middle, finished goods and dispatch on the right. Press <span className="text-zinc-200">Guided tour</span> or click any department.</p>
+            </div>
+            <Link href={liveFactory} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-white/15 px-4 text-sm font-medium text-white hover:bg-white/5">See it with live data <ArrowRight className="size-4" /></Link>
+          </div>
+          <FactoryTwin initial={null} mode="showcase" className="mt-8" viewportClassName="h-[60svh] min-h-[380px] lg:h-[600px]" />
+          <p className="mt-3 text-xs text-zinc-500">After sign-in the same model is driven by the database: outline colours, gauges, cartons and the truck at the dock reflect posted purchases, production runs, invoices and dispatches.</p>
+        </section>
 
         <section className="mx-auto max-w-6xl px-4 py-24" aria-labelledby="products-title">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">Product overview</p>
@@ -114,8 +151,6 @@ export default async function LandingPage() {
             ))}
           </ul>
         </section>
-
-        <ScrollStory />
 
         {PILLARS.map((pillar) => (
           <section key={pillar.id} id={pillar.id} className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24" aria-labelledby={`${pillar.id}-title`}>
@@ -157,7 +192,7 @@ export default async function LandingPage() {
         <section id="technology" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24" aria-labelledby="tech-title">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">Technology</p>
           <h2 id="tech-title" className="mt-3 text-3xl font-semibold tracking-tight text-white">Boring where it matters, modern where it helps</h2>
-          <p className="mt-3 max-w-2xl text-zinc-400">PostgreSQL transactions with row locks, unique keys and triggers guard the books. The 3D layer is decorative, lazy-loaded and switched off for reduced motion or missing WebGL.</p>
+          <p className="mt-3 max-w-2xl text-zinc-400">PostgreSQL transactions with row locks, unique keys and triggers guard the books. The 3D digital twin is plain Three.js, lazy-loaded, reads a database snapshot every 15 seconds, and falls back to a list without WebGL.</p>
           <ul className="mt-8 flex flex-wrap gap-2">
             {STACK.map((s) => <li key={s} className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-zinc-300">{s}</li>)}
           </ul>
@@ -178,8 +213,7 @@ export default async function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-xs text-zinc-500 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2"><BrandMark className="size-5" /> Sutra ERP: internship prototype. All companies, people and GSTINs are fictional.</div>
           <div>
-            Hero background: <a className="underline underline-offset-2 hover:text-zinc-300" href="https://github.com/tengbao/vanta" target="_blank" rel="noopener noreferrer">Vanta.js</a> (MIT). Scroll-driven camera technique inspired by{" "}
-            <a className="underline underline-offset-2 hover:text-zinc-300" href="https://github.com/fireship-io/threejs-scroll-animation-demo" target="_blank" rel="noopener noreferrer">Fireship&apos;s three.js scroll demo</a>.
+            Hero background: <a className="underline underline-offset-2 hover:text-zinc-300" href="https://github.com/tengbao/vanta" target="_blank" rel="noopener noreferrer">Vanta.js</a> (MIT). Factory model built procedurally with Three.js.
           </div>
         </div>
       </footer>

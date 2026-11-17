@@ -176,3 +176,54 @@
     display: none !important;
   }
 }
+
+/* ── 3D factory digital twin labels (CSS2D overlay; real buttons, status spelled out in text) ── */
+.twin-label {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 0.12);
+  background: rgb(255 255 255 / 0.92);
+  color: #18181b;
+  font: 500 11px/1.2 var(--font-geist-sans, system-ui), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.twin-label:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgb(0 0 0 / 0.22); }
+.twin-label:focus-visible { outline: 2px solid #b45309; outline-offset: 2px; }
+.twin-label.is-selected { border-color: #b45309; box-shadow: 0 0 0 2px rgb(180 83 9 / 0.35), 0 3px 8px rgb(0 0 0 / 0.22); }
+.twin-dot {
+  display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 999px;
+  background: #a1a1aa; color: #fff; font-size: 9px; font-weight: 700; line-height: 1; flex-shrink: 0;
+}
+.twin-label[data-status="warning"] .twin-dot { color: #451a03; }
+.twin-compact .twin-state { display: none; }
+.twin-compact .twin-label { padding: 2px 7px 2px 3px; }
+.twin-name { overflow: hidden; text-overflow: ellipsis; }
+.twin-state { color: #52525b; font-weight: 400; }
+.twin-state:empty { display: none; }
+.twin-label[data-status="ok"] .twin-dot { background: #22c55e; }
+.twin-label[data-status="warning"] .twin-dot { background: #f59e0b; }
+.twin-label[data-status="critical"] .twin-dot { background: #ef4444; }
+.twin-label[data-status="critical"] .twin-state { color: #b91c1c; font-weight: 600; }
+.twin-label[data-status="warning"] .twin-state { color: #92400e; }
+@media (max-width: 640px) {
+  .twin-label { font-size: 10px; padding: 2px 6px 2px 3px; max-width: 150px; }
+  .twin-state { display: none; }
+}
+/* Critical areas pulse in the label (CSS), so the 3D scene does not need to redraw every frame. */
+.twin-label[data-status="critical"] .twin-dot { animation: twin-pulse 1.4s ease-in-out infinite; }
+@keyframes twin-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(239 68 68 / 0.55); }
+  50% { box-shadow: 0 0 0 5px rgb(239 68 68 / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .twin-label { transition: none; }
+  .twin-label[data-status="critical"] .twin-dot { animation: none; }
+}

@@ -47,3 +47,6 @@ desktop.ini
 
 # generated exports
 exports/
+
+# Demo video (shared directly, not published with the public repo)
+demo/*.mp4

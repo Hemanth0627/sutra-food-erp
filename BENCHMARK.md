@@ -1,6 +1,6 @@
 # Benchmark results
 
-This is the mandatory scenario from the assignment (section 6), as posted by the system. Every figure below was read from the database after `npm run benchmark:reset`, which replays the scenario through the same service functions the API uses. Document numbers depend on the financial year; dates are the day the seed runs (here 17 Nov 2026, FY 2026-27).
+This is the mandatory Murukku 200 g scenario from the assignment, as posted by the system. Every figure below was read from the database after `npm run benchmark:reset`, which replays the scenario through the same service functions the API uses. Document numbers depend on the financial year; dates are the day the seed runs (here 17 Nov 2026, FY 2026-27).
 
 **Reproduce:**
 
@@ -183,7 +183,16 @@ Output of `npm run benchmark:verify`. Stock checks read the ledger rows posted b
 
 ## 10. Automated validation
 
-`tests/unit/calculations.test.ts` (23 tests) and `tests/integration/benchmark.test.ts` (22 tests against PostgreSQL) cover what section 6.5 asks for:
+`npm test` runs 68 tests in four files, all passing (last run 18 Nov 2026):
+
+| File | Tests | What it covers |
+|---|---:|---|
+| `tests/unit/calculations.test.ts` | 23 | decimals, unit conversion, weighted average, BOM explosion, variance, run costing, GST, GSTIN, FY numbering, separation of duties |
+| `tests/unit/factory.test.ts` | 11 | digital-twin status rules (stock, variance direction, gauges, storage zones), role permission matrix, navigation only shows permitted pages |
+| `tests/integration/benchmark.test.ts` | 22 | the full benchmark on PostgreSQL, plus integrity guards (no double completion/dispatch, idempotent offline sync, no over-allocation, no negative stock, immutable invoices and ledger) |
+| `tests/integration/workflows.test.ts` | 12 | twin snapshot equals the benchmark state and changes after a new posting; purchase order → partial receipt → over-receipt refused → received; admin order amendment with before/after audit; stock adjustment; partial payment; real API routes return 401/403/200 per role |
+
+The benchmark requirements map to tests as follows:
 
 | Requirement | Test(s) |
 |---|---|
@@ -202,3 +211,25 @@ Output of `npm run benchmark:verify`. Stock checks read the ledger rows posted b
 | Invoice totals | unit + integration: ₹7,875, round-off, amount in words |
 | Outstanding balances | integration: ₹3,875; over-allocation rejected |
 | Cost per packet | unit + integration: ₹5,855, ₹31.14; unchanged after a later ₹60 flour purchase |
+| Order modification audit | integration: amend 10 @ ₹50 → 12 @ ₹48, audit row holds before/after; blocked after invoicing |
+| Purchase orders | integration: PO does not move stock; 300 + 200 received; 250 over-receipt refused |
+| Authorization | unit: role matrix; integration: salesman approve → 403, accountant payment → 403, production invoice → 403, owner purchase → 403, no session → 401 |
+
+## 11. The benchmark in the 3D digital twin
+
+After the seed, `/factory` (Owner, Admin, Production, Accountant) shows the benchmark state, read from the same records (`npm run factory:print` prints it):
+
+| Department | Status | Why (from posted records) |
+|---|---|---|
+| Flour, oil, spice, packaging stores | Normal | 120 kg flour, 19.5 L oil, 3.8 kg spice, 306 pouches, 21 cartons: all above reorder level |
+| Production hall | Attention · idle | No run in progress; last run PR/2026-27/0001 has yield −6.00% and oil +5.00% (tolerance ±3%) |
+| Cooking & frying | Attention | Oil 10.5 L against 10 L standard (+5.00%) |
+| Mixing | Normal | Flour and spice issued exactly to standard |
+| Packaging line | Attention | 6 of 194 pouches damaged (3.09%) |
+| Quality control | Attention | 1 of 1 recent runs outside tolerance |
+| Cooling | Idle | Not recorded separately; nothing on the line |
+| Finished-goods warehouse | Critical | Distributor B needs 120 Murukku, 88 available → short 32 |
+| Dispatch & loading | Attention | Retailer A dispatched; Distributor B's order waiting for stock; no vehicle at the dock |
+
+`npm run demo:extras` (run automatically by the seed) adds one open purchase order for packaging, which appears as an incoming delivery in the raw-material warehouse. A purchase order never moves stock, so none of the 25 checks change.
+

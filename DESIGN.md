@@ -1,6 +1,21 @@
 # Design note: Sutra ERP
 
-This note explains how the system is built and why: the architecture, the data model, the inventory ledger, and the formulas behind BOM explosion, variance, costing and GST.
+This note explains how the system is built and why: the architecture, the data model, the inventory ledger, the formulas behind BOM explosion, variance, costing and GST, and how the 3D factory digital twin gets its data.
+
+## At a glance
+
+| Concern | Design |
+|---|---|
+| Architecture | Next.js 15 (App Router) server: pages, `/api/*` route handlers, a service layer that does one DB transaction per business posting, pure calculation library in `src/lib`. PostgreSQL 17 via Prisma. |
+| Inventory | Append-only stock ledger (`InventoryTransaction`). `postMovement()` is the only writer; `InventoryBalance` is a cache updated in the same transaction and reconciled against `SUM(ledger)`. `Opening + receipts − issues − sales ± adjustments = closing` holds by construction. |
+| Valuation | Moving weighted average per item (flour ₹42 → ₹43.125/kg after 60 kg at ₹45). |
+| Production | Versioned BOM → run explodes requirements → issue → complete posts issues, packaging, damage and output in one transaction, freezes variance and costing. |
+| Costing | `(materials + packaging incl. damaged + labour + gas/power + other) ÷ actual good packets` (₹5,855 ÷ 188 = ₹31.14). |
+| GST | Seller state = place of supply → CGST + SGST (half each), else IGST. Exact decimals, FY numbering, cancel only via credit note. |
+| Purchases | Purchase order (commitment, no stock) → goods receipt against the PO (ledger receipt, PO received qty advances, over-receipt blocked). |
+| Audit | Every service writes `AuditLog` inside its own transaction (before/after JSON where values change, e.g. order amendments). |
+| Security | DB-backed sessions (HMAC of token), server-side permission check on every page and API route, Origin check, Zod validation. |
+| 3D twin | `getFactorySnapshot()` reads posted records → `/api/factory` (polled every 15 s) → Three.js scene colours, gauges and prop counts. No simulated activity. |
 
 ## 1. System architecture
 
@@ -9,7 +24,7 @@ flowchart LR
   subgraph Client["Browser"]
     P["Server-rendered pages (RSC)"]
     I["Client islands: forms (RHF + Zod), charts, offline order queue"]
-    L["Landing: Vanta hero + three.js scroll story (lazy)"]
+    L["3D factory twin (Three.js, lazy) on /factory and the landing tour"]
   end
   subgraph Next["Next.js 15 server (Node.js runtime)"]
     MW["middleware.ts: session-cookie gate"]
@@ -23,6 +38,7 @@ flowchart LR
   I -- "JSON fetch" --> API --> SVC --> INV --> DB
   SVC --> DB
   P --> Q --> DB
+  L -- "poll /api/factory (15 s)" --> API
   SVC -. uses .-> LIB
   Q -. uses .-> LIB
   MW --> P
@@ -50,6 +66,11 @@ erDiagram
   Item ||--o| Product : "sales master (FG)"
   Item ||--o| InventoryBalance : "cached balance"
   Item ||--o{ InventoryTransaction : ledger
+  Supplier ||--o{ PurchaseOrder : "ordered from"
+  PurchaseOrder ||--|{ PurchaseOrderItem : lines
+  PurchaseOrderItem }o--|| Item : orders
+  PurchaseOrder ||--o{ Purchase : "received by"
+  PurchaseOrderItem ||--o{ PurchaseItem : "fulfilled by"
   Supplier ||--o{ Purchase : supplies
   Purchase ||--|{ PurchaseItem : lines
   PurchaseItem }o--|| Item : receives
@@ -87,7 +108,7 @@ Supporting tables: `CompanySettings` (seller GSTIN, address, variance tolerance)
 | Numbering | `DocumentSequence` rows like `INV:2026-27`, incremented with `INSERT … ON CONFLICT DO UPDATE … RETURNING` inside the posting transaction: gap-free per committed transaction and concurrency-safe. Numbers are `INV/2026-27/0001` (FY April–March, IST). |
 | Snapshots | Invoices copy the seller and buyer name, GSTIN, address, place of supply and line rates/HSN at posting. Runs copy the BOM version, tolerance, material rates and selling price. Later master-data changes never alter history. |
 | Idempotency | `SalesOrder.clientRef` unique (offline sync), `Dispatch.invoiceId` unique (dispatch once), `CreditNote.invoiceId` unique, `Purchase(supplierId, supplierInvoiceNo)` unique, ledger key `(sourceType, sourceId, sourceLineId, movementType)` unique. |
-| Integrity (SQL) | CHECKs: `InventoryBalance.quantity ≥ 0`, ledger `balanceAfter ≥ 0`, positive payments and allocations, `invoicedQty ≤ quantity`, `returnedQty ≤ stockQty`. Triggers: ledger rows can't be updated or deleted; invoices can't be deleted, and only `status`/`cancelledAt` may change (never back from CANCELLED); invoice lines are immutable. |
+| Integrity (SQL) | CHECKs: `InventoryBalance.quantity ≥ 0`, ledger `balanceAfter ≥ 0`, positive payments and allocations, `invoicedQty ≤ quantity`, `returnedQty ≤ stockQty`, PO `receivedQty ≤ quantity`. Triggers: ledger rows can't be updated or deleted; invoices can't be deleted, and only `status`/`cancelledAt` may change (never back from CANCELLED); invoice lines are immutable. |
 | Indexes | On every foreign key used in lists, plus `(itemId, txnDate)`, `txnDate`, `movementType`, `(sourceType, sourceId)` on the ledger, and date/status columns on documents. |
 
 ## 4. Inventory ledger architecture
@@ -188,7 +209,9 @@ Each of these runs inside **one** `prisma.$transaction` (all-or-nothing):
 
 | Operation | What commits together |
 |---|---|
-| Post purchase | purchase + lines + one `PURCHASE_RECEIPT` per line + balance updates + audit |
+| Raise purchase order | PO + lines + audit (no stock movement) |
+| Post purchase / goods receipt | PO row lock and received-qty update (if against a PO) + purchase + lines + one `PURCHASE_RECEIPT` per line + balance updates + audit |
+| Amend order (admin) | order row lock, "not invoiced" check, line qty/rate + subtotal, audit with every line's before/after values and the reason |
 | Complete production run | conditional status claim `IN_PROGRESS → COMPLETED` (prevents double completion), stock validation for every line, raw issues, packaging consumption, damaged material, FG output with batch/expiry, material variances, yield and costing snapshot, audit |
 | Create invoice | order row lock, availability check (on hand − undispatched invoiced qty), invoice + lines + tax, order `invoicedQty` and status, audit |
 | Dispatch | invoice row lock, "already dispatched?" check, dispatch + `SALES_DISPATCH` per line at weighted-average cost, audit |
@@ -210,8 +233,31 @@ Each of these runs inside **one** `prisma.$transaction` (all-or-nothing):
 * Headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy` and `Permissions-Policy`. `poweredByHeader` is off.
 * The client never sees the database URL or secrets: every Prisma import is server-only (server components, route handlers, services).
 
-## 11. Landing-page 3D layer
+## 11. 3D factory digital twin
 
-* **Vanta.js NET** (MIT) renders the hero background. It is loaded with dynamic `import()`, only when WebGL is available, motion is allowed and the device isn't low-power. It is destroyed when the hero leaves the viewport. Vanta's NET effect targets older three.js and references `THREE.VertexColors`, which modern three removed, so it receives a shim object `{ ...THREE, VertexColors: true }`.
-* **Scroll story:** the scroll-position-to-camera technique popularised by Fireship's three.js scroll demo, re-implemented (no code copied). GSAP ScrollTrigger reports section progress (0–1), and the render loop eases the camera between six procedural stations (no external models). The canvas is sticky behind the step cards. Rendering stops when off-screen or when the tab is hidden, and the pixel ratio is capped at 1.75. Reduced motion or no WebGL shows a static, highlighted flow diagram instead.
-* The 3D code lives in `src/components/landing` and is never imported by the ERP pages.
+**Data flow.** `src/server/queries/factory.ts → getFactorySnapshot()` runs ~10 read queries (balances, active and recent runs with materials, open POs, recent ledger rows, invoices awaiting dispatch, dispatches, open orders, production batches) and returns one `DepartmentSnapshot` per department: `status` (ok / warning / critical / idle), a plain-language `statusText`, `activity` (running only while a run is `IN_PROGRESS` or a vehicle is loading), metrics, tables and visual parameters. `/factory` renders it on the server, then the client polls `GET /api/factory` (permission `factory:view`) every 15 seconds and on window focus.
+
+```
+posted ERP records ──► getFactorySnapshot() ──► /api/factory ──► FactoryTwin (React) ──► scene.update(snapshot)
+                                                                     │                       ├─ outline + beacon colour, label text/glyph
+                                                                     └─ info panel (2D)      ├─ gauges = qty ÷ (3 × reorder level)
+                                                                                             ├─ sacks / bins / boxes / cartons = qty ÷ unit size
+                                                                                             └─ machines animate only while a run is IN_PROGRESS
+```
+
+**Status rules** (`src/lib/factory.ts`, unit-tested):
+
+| Area | Critical (red) | Attention (amber) | Idle (grey) |
+|---|---|---|---|
+| Stores (flour, oil, spice, packaging, raw) | an item at 0 or below half its reorder level | an item at/below reorder level; PO overdue | no items stored |
+| Production, mixing, frying, packing, QC (latest run in 30 days) | material over-use or yield shortfall beyond 2 × tolerance | any variance beyond tolerance (e.g. oil +5%, yield −6%) | no recent run and nothing in progress |
+| Finished goods | open-order demand exceeds available stock (Distributor B short 32) | a product at/below reorder level | no products |
+| Dispatch | — | invoices waiting to load, or orders waiting for approval/stock | nothing dispatched yet |
+
+Status is never colour-only: every label shows a glyph (✓ ! ✕ –) and, when zoomed in, the words; the side list and info panel spell it out. Raw materials are placed in a store by rule (`storageZoneFor`: litres → oil; flour/besan/rice → flour; spice/salt/sugar → spice; everything else → general store).
+
+**Rendering.** Plain Three.js (no extra 3D dependency), procedural geometry and shared materials, instanced meshes for countable props, one shadow-casting light, a CSS2D layer for labels (real `<button>`s, keyboard-focusable). OrbitControls for rotate/zoom/pan, GSAP for camera fly-to, WASD in free-camera mode, day/night lighting, full screen. The module is code-split and lazy-loaded; rendering pauses when the canvas is off-screen or the tab is hidden; pixel ratio is capped and shadows are off on low-power devices; reduced motion disables animation and camera tweens; without WebGL the page shows the department list with the same live data.
+
+**Landing tour.** The public landing page uses the same scene in `showcase` mode: neutral outlines, illustrative stock and a "not live data" caption, with each department's description. Live figures need a signed-in role with `factory:view`.
+
+**Hero background.** Vanta.js NET (MIT), loaded with dynamic `import()` only when WebGL is available, motion is allowed and the device isn't low-power, and destroyed when the hero leaves the viewport. It receives a `{ ...THREE, VertexColors: true }` shim because modern three removed `THREE.VertexColors`.

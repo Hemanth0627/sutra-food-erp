@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark, BrandName } from "./brand";
+import { HeaderSearch, NotificationsBell } from "./header-tools";
 import { ICONS } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 import { useOnline } from "./use-online";
@@ -195,12 +196,14 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
             <BrandName className="text-sm" />
           </Link>
           <Breadcrumbs />
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex min-w-0 flex-1 justify-end px-2 lg:px-4"><HeaderSearch role={user.role} /></div>
+          <div className="flex items-center gap-1">
             {!online && (
               <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning">
                 <WifiOff className="size-3" /> Offline
               </span>
             )}
+            <NotificationsBell />
             <ThemeToggle />
             <UserMenu user={user} />
           </div>

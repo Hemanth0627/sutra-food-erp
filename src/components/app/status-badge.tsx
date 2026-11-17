@@ -20,6 +20,9 @@ const MAP: Record<string, BadgeProps["variant"]> = {
   PARTIAL: "warning",
   UNPAID: "danger",
   OVERDUE: "danger",
+  OPEN: "info",
+  PARTIALLY_RECEIVED: "brand",
+  RECEIVED: "success",
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

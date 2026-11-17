@@ -2,7 +2,7 @@
   "name": "sutra-food-erp",
   "version": "1.0.0",
   "private": true,
-  "description": "Sutra ERP: food manufacturing ERP and production management prototype (sales, GST invoicing, BOM, production, inventory ledger, costing, receivables and audit reports).",
+  "description": "Sutra ERP: food manufacturing ERP with an interactive 3D factory digital twin (sales, GST invoicing, purchase orders, BOM, production, inventory ledger, costing, receivables and audit reports).",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.19"
@@ -29,10 +29,12 @@
     "postinstall": "prisma generate",
     "test:smoke": "node scripts/smoke-test.mjs",
     "icons": "node scripts/generate-icons.mjs",
-    "demo:fresh": "prisma migrate reset --force --skip-seed && tsx prisma/seed.ts --masters-only"
+    "demo:fresh": "prisma migrate reset --force --skip-seed && tsx prisma/seed.ts --masters-only",
+    "demo:extras": "tsx scripts/seed-demo-extras.ts",
+    "factory:print": "tsx scripts/print-factory.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "5.2.2",

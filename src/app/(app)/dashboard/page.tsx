@@ -7,11 +7,12 @@ import { SalesmanHome } from "./salesman";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const user = await requirePageUser();
+  const { period } = await searchParams;
   switch (user.role) {
     case "OWNER":
-      return <OwnerDashboard />;
+      return <OwnerDashboard period={period} />;
     case "ADMIN":
       return <AdminDashboard name={user.name} />;
     case "SALESMAN":

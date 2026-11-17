@@ -1,8 +1,12 @@
-# Sutra ERP: food manufacturing ERP prototype
+# Sutra Food Manufacturing ERP
 
 **Live demo:** https://sutra-food-erp.vercel.app (sign in with any demo account below, password `Demo@1234`; all data is fictional)
 
-Sutra is an ERP and production-management system for a (fictional) South Indian packaged-snack manufacturer, *Thenmalai Snack Works Pvt. Ltd.*, which makes murukku, mixture, banana chips, potato chips and traditional sweets.
+**In 30 seconds:** Sutra runs a snack factory from flour sack to GST invoice. Salesmen book orders on their phones, the admin approves them against live stock, the factory makes murukku to a versioned recipe (BOM), every stock movement lands in one ledger, and the office issues GST invoices, records payments and pulls audit reports. A **live 3D digital twin** of the plant shows all 13 departments, coloured by what the database says is happening.
+
+Sutra is built for a (fictional) South Indian packaged-snack manufacturer, *Thenmalai Snack Works Pvt. Ltd.*, which makes murukku, mixture, banana chips, potato chips and traditional sweets.
+
+**The business problem.** A small snack maker typically runs on paper order books, a stock register and a separate billing tool. Nobody knows today's real flour or pouch stock, whether a distributor's order can be met, how much oil a batch really used, or what a packet actually costs. Sutra replaces that with one system of record where each transaction is entered once.
 
 The core idea: **a transaction is entered once, at its source, and everything else updates from it.** Purchases, production runs, dispatches, returns and adjustments all post to a single, append-only **inventory ledger**. Stock balances, weighted-average costs, costing snapshots, GST invoices, receivables, dashboards and reports are all read from posted records. Nothing is hard-coded.
 
@@ -20,21 +24,23 @@ PRODUCTION  Purchase → Raw-material stock → BOM → Material issue → Run �
 
 1. [Technology stack](#technology-stack)
 2. [Architecture](#architecture)
-3. [Features implemented](#features-implemented)
-4. [Installation and local run](#installation-and-local-run)
-5. [Database setup](#database-setup)
-6. [Environment configuration](#environment-configuration)
-7. [Demo credentials](#demo-credentials)
-8. [Seed and benchmark reset](#seed-and-benchmark-reset)
-9. [Benchmark results](#benchmark-results)
-10. [Costing assumptions](#costing-assumptions)
-11. [Inventory valuation method](#inventory-valuation-method)
-12. [Testing](#testing)
-13. [Known limitations](#known-limitations)
-14. [Deployment](#deployment)
-15. [Project structure](#project-structure)
+3. [Features implemented](#features-implemented) and [features by role](#features-by-role)
+4. [3D factory digital twin](#3d-factory-digital-twin)
+5. [Screenshots](#screenshots)
+6. [Installation and local run](#installation-and-local-run)
+7. [Database setup](#database-setup)
+8. [Environment configuration](#environment-configuration)
+9. [Demo credentials](#demo-credentials)
+10. [Seed and benchmark reset](#seed-and-benchmark-reset)
+11. [Benchmark results](#benchmark-results)
+12. [Costing assumptions](#costing-assumptions)
+13. [Inventory valuation method](#inventory-valuation-method)
+14. [Testing](#testing)
+15. [Known limitations](#known-limitations)
+16. [Deployment](#deployment) and [GitHub commands](#commit-push-and-deploy)
+17. [Project structure](#project-structure)
 
-Further documents: [DESIGN_NOTE.md](DESIGN_NOTE.md) (architecture, ER diagram, formulas), [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md) (the mandatory scenario, step by step), [DEMO_GUIDE.md](DEMO_GUIDE.md) (8-minute video script), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Further documents: [DESIGN.md](DESIGN.md) (architecture, ER diagram, formulas, twin data flow), [BENCHMARK.md](BENCHMARK.md) (the mandatory scenario, step by step, expected vs actual), [DEMO_SCRIPT.md](DEMO_SCRIPT.md) (8-minute demo video script), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 
@@ -48,7 +54,7 @@ Further documents: [DESIGN_NOTE.md](DESIGN_NOTE.md) (architecture, ER diagram, f
 | Data | PostgreSQL 17, Prisma ORM 6, `decimal.js` for exact money/quantity arithmetic |
 | Auth | Database-backed sessions (httpOnly cookie, HMAC-hashed token), scrypt password hashing, role-based permissions enforced on the server |
 | Documents | PDFKit (GST invoices, report PDFs), ExcelJS (XLSX), CSV |
-| Landing page 3D | three.js, Vanta.js (NET effect), GSAP + ScrollTrigger |
+| 3D digital twin | Three.js (procedural models, OrbitControls, CSS2D labels, instanced meshes), GSAP camera moves, polling a database snapshot API; Vanta.js NET hero on the landing page |
 | PWA | Web app manifest, service worker, offline order queue with idempotent sync |
 | Tests | Vitest (unit + integration against a real PostgreSQL test database), HTTP smoke test |
 
@@ -67,24 +73,29 @@ Service layer   src/server/services/**  ← business rules; each posting is ONE 
 PostgreSQL       append-only ledger (trigger), immutable invoices (trigger), CHECK constraints, unique keys
 
 Server pages     src/app/(app)/**       ← read through src/server/queries/** and src/server/reports/**
-Pure domain lib  src/lib/**             ← GST, WAC valuation, BOM explosion, variance, costing, units (unit-tested)
+Pure domain lib  src/lib/**             ← GST, WAC valuation, BOM explosion, variance, costing, units, twin status rules (unit-tested)
+3D twin          src/components/factory ← Three.js scene; data from GET /api/factory → src/server/queries/factory.ts
 ```
+
+**Stack in a few sentences.** Next.js 15 serves both the pages and the JSON API from one TypeScript codebase, so business rules live in one service layer that the API, the seed and the tests all call. PostgreSQL holds the data with Prisma as the typed ORM; money and quantities use exact decimals, and database constraints and triggers back up the application rules. The UI is Tailwind with Radix-based components and Recharts; the 3D factory is plain Three.js, lazy-loaded so it never slows the ERP screens.
 
 * **Pure calculations** (`src/lib`) have no I/O. The same functions are used by the services, the UI previews and the tests.
 * **Services** (`src/server/services`) own the workflows: purchases, BOM versioning, production, expenses, orders, invoices, dispatch, payments, adjustments and settings.
 * **The benchmark scenario is executed through these services** (`prisma/seed/benchmark-scenario.ts`), so the seeded numbers come out of the real business logic.
 
-See [DESIGN_NOTE.md](DESIGN_NOTE.md) for the ER diagram, the ledger posting algorithm and every formula.
+See [DESIGN.md](DESIGN.md) for the ER diagram, the ledger posting algorithm, every formula and the digital-twin data flow.
 
 ## Features implemented
 
 **Roles and access.** Five roles: Owner, Admin, Salesman, Production Supervisor and Accountant. Each has its own navigation and dashboard. Every page and every API route checks permissions on the server (`src/lib/permissions.ts`). Hidden buttons are cosmetic only.
 
-**Owner.** Business overview with today's sales, monthly revenue, orders and pending approvals, production output and yield, raw/packaging stock value, finished-goods stock, low-stock alerts, variance alerts, receivables and collections, product-wise profitability, a monthly sales chart, production performance and recent transactions. Also analytics (12 months), a financial overview, alerts, a live benchmark check and the audit log.
+**Owner.** Business overview with today's sales, monthly revenue, orders and pending approvals, production output and yield, raw/packaging stock value, finished-goods stock, low-stock alerts, variance alerts, receivables and collections, product-wise profitability, a monthly sales chart, production performance, an inventory-movement chart (stock value in vs out from the ledger) and recent transactions. A period selector (today, 7 days, this month, 30 days, this financial year) drives the period figures and profitability, and a refresh button re-reads the database. Also analytics (12 months), a financial overview, alerts, a live benchmark check and the audit log.
 
 **Salesman (mobile-first).** Two-step order entry (customer, then quantities) with large tap targets and a sticky total. Captures an order in well under a minute. Also order history and status, customers, the product catalogue and a customer-wise sales summary. **Offline capture:** orders made offline are queued on the device with a UUID `clientRef` and synced automatically. The server treats `clientRef` as an idempotency key, so retries never create duplicates.
 
 **Customers and products.** Retailers and distributors with GSTIN validation (format, checksum and state code), place of supply, credit limit, payment terms, live outstanding balance and an account statement. Products carry SKU, category, pack size, HSN, GST rate, selling price, reorder level, shelf life and active flag. Raw and packaging materials are managed alongside them.
+
+**Purchase orders.** Raise a PO to a supplier (materials, quantity, unit, rate, GST, expected date). A PO is a commitment only and never moves stock. **Receive goods** against it later: the receipt form is pre-filled with the open balance, a part delivery leaves the PO `PARTIALLY_RECEIVED`, and receiving more than ordered is refused (also a database CHECK). Open POs show as incoming deliveries in the 3D raw-material warehouse.
 
 **Purchases.** Supplier masters. Purchase entries post goods receipts with unit conversion (e.g. buy in grams, stock in kilograms), input GST, supplier batch and expiry. A duplicate supplier invoice is rejected. Supplier returns are supported. Every receipt is a ledger movement that updates the weighted-average cost.
 
@@ -94,17 +105,54 @@ See [DESIGN_NOTE.md](DESIGN_NOTE.md) for the ER diagram, the ledger posting algo
 
 **Inventory.** Raw materials, packaging and finished goods. Ten movement types. Each ledger row records item, type, quantity, unit cost, value, balance before/after, source document, line, batch, expiry, date and user. Low-stock alerts, stock summaries, recent movements and a live **reconciliation** (balance cache = Σ ledger). Authorised adjustments require a reason and can never push stock below zero.
 
+**Order verification (Admin).** Before invoicing, the admin can correct a line's quantity or agree a different rate. The change needs a reason and is stored in the audit log with every line's before and after values; once anything is invoiced the order is locked. The order page shows available stock, reserved stock, the shortage and the GST preview before approval.
+
 **GST invoicing and dispatch.** FY-based numbering (`INV/2026-27/0001`). Seller and buyer snapshots are taken at posting. Intra-state supplies get CGST + SGST; inter-state supplies get IGST. Line-wise half-up rounding, a rupee round-off line and the amount in words. Downloadable PDF tax invoices. Invoices can only include stock that is actually available (partial fulfilment is supported). Each invoice is dispatched exactly once. Cancellation posts a **credit note** (optionally returning goods to stock); the database refuses edits or deletes on posted invoices.
 
 **Payments and receivables.** Receipts can be auto-allocated oldest-first or manually across invoices. Allocations can never exceed an invoice's balance; any excess stays on account. Customer outstanding, open invoices and ageing buckets (not due, 1–30, 31–60, 61–90, 90+ days past due).
 
-**Costing.** Weighted-average material cost at issue, packaging including damaged units, labour, gas and power, and other overheads. Overheads are charged directly to a run or spread over the month's runs by good output. The result is cost per good packet, gross margin and margin %, frozen per run.
+**Costing.** Weighted-average material cost at issue, packaging including damaged units, labour, gas and power, and other overheads. Overheads are charged directly to a run or spread over the month's runs by good output. The result is cost per good packet, gross margin and margin %, frozen per run. The **Costing** page shows each run's cost build-up line by line (₹5,855 ÷ 188 good packets = ₹31.14 for the benchmark run) and product profitability.
 
 **Reports (accountant).** 18 reports: sales register, customer-wise and product-wise sales, GST outward supplies (HSN-wise) with credit notes, purchase register, raw/packaging/finished-goods stock, stock movement ledger, production, planned vs actual material, yield and wastage, cost per packet, collections, outstanding receivables, receivables ageing, audit trail, and a **consolidated monthly audit report** (summary, all registers, ledger reconciliation and audit trail). Filters cover date range, customer, product and transaction type. Every report exports to **CSV, Excel and PDF**, and every export is itself logged in the audit trail.
 
+**Search and notifications.** The top bar searches orders, invoices, customers, products, purchase orders, production runs and suppliers (Ctrl K), limited on the server to what the role may see. The bell lists live alerts (low stock, variance, shortages, overdue invoices) for office roles and recent order decisions for salesmen.
+
 **Audit and security.** Each posting writes an audit entry inside the same transaction. Passwords are hashed with scrypt. Session tokens are stored only as HMAC hashes and expire after 12 hours. Failed logins are rate-limited and audited. State-changing requests require a same-origin check. Inputs are validated with Zod. Security headers are set. No secrets reach the client.
 
-**Landing page.** A public page with a Vanta.js NET hero background and a scroll-driven three.js story (raw ingredients → production → packed pouches → warehouse → sales orders → invoices and reports). Both are lazy-loaded. They are disabled for `prefers-reduced-motion`, missing WebGL or low-power devices, which get a static fallback. They pause when off-screen.
+**Landing page.** Built so a first-time visitor gets it fast: a one-sentence hero ("Sutra runs a snack factory, from flour sack to GST invoice"), a three-step *Sell → Make → Bill* strip, and a **1-minute factory tour** using the same 3D model as the live twin (click a department or press *Guided tour* for what happens there and which ERP records drive it). *Explore the live 3D factory* goes straight to sign-in and then to the live twin. The Vanta.js hero is lazy-loaded and skipped for reduced motion, missing WebGL or low-power devices.
+
+## Features by role
+
+| Role | Sees | Can do |
+|---|---|---|
+| **Salesman** (mobile-first) | Own orders and status, assigned customers, products and prices, customer-wise sales | Place orders in under a minute (also offline), cancel own pending orders |
+| **Factory Admin** | Orders with stock check, customers, products, suppliers, POs, purchases, invoices, dispatch, payments, inventory, reports, 3D factory | Approve/reject/amend orders, issue GST invoices, dispatch, record payments, raise POs and receive goods, maintain masters, adjust stock, settings |
+| **Production Supervisor** | Production dashboard, BOMs, runs, consumption, variance, costing, raw-material stock, POs, 3D factory | Create/activate BOM versions, plan → start → complete runs, record damage and scrap, charge labour/gas/power, raise POs and receive materials |
+| **Accountant / Auditor** | Every register and report, stock ledger, costing, receivables, audit log, 3D factory | Read only; export any report to CSV, Excel or PDF |
+| **Owner** | Business overview, analytics, finance, alerts, every record, costing and profitability, benchmark check, audit log, 3D factory | Read only (plus company settings) |
+
+Permissions are enforced on the server for every page and API call (`src/lib/permissions.ts`); the integration tests call the real API routes as each role and expect 403 where the role has no right.
+
+## 3D factory digital twin
+
+`/factory` (Owner, Admin, Production Supervisor, Accountant) is an interactive 3D model of the plant with 13 clickable departments laid out in material-flow order: **stores** (raw-material warehouse, flour, oil, spice, packaging), the **murukku line** (production hall, mixing, cooking & frying, cooling, packaging line, quality control) and **finished goods** (warehouse, dispatch & loading).
+
+* **Real data only.** `GET /api/factory` builds a snapshot from posted records and the page polls it every 15 seconds (and on window focus). Purchases raise the flour sacks and gauges, production lowers raw stock and adds cartons to the finished-goods racks, dispatch empties them, open invoices bring a truck to the dock, and variance colours the production line. Machines animate **only** while a run is `IN_PROGRESS`; otherwise the line says *Idle*. Cooling is not recorded separately in the ERP, and the twin says so.
+* **Status:** green Normal, amber Attention, red Critical, grey Idle/no data, always with a text label and a shape glyph (✓ ! ✕ –), never colour alone. Rules are in `src/lib/factory.ts` and [DESIGN.md](DESIGN.md#11-3d-factory-digital-twin).
+* **Info panel:** each department shows its status sentence, what happens there, live metrics, stock gauges, tables (recent ledger movements, open POs, runs, planned vs actual, batches, pending dispatches, orders awaiting stock) and links to the ERP pages that own the data.
+* **Controls:** rotate, zoom, pan, reset camera, click-to-focus, a 13-step **guided tour**, free-camera mode (WASD/arrows, Q/E, +/−), day/night lighting, full screen. Labels are keyboard-focusable buttons.
+* **Performance and fallbacks:** procedural geometry with shared materials and instancing, code-split and lazy-loaded (the page's first load is ~127 kB JS), rendering pauses off-screen, low-power devices drop shadows and pixel ratio, reduced motion disables animation, phones get a portrait framing, and without WebGL the same live data is shown as a department list.
+
+The ERP never depends on the twin: every operation is available through normal forms, tables and dashboards.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Landing page](docs/screenshots/landing.jpg) Landing page | ![3D factory twin](docs/screenshots/factory.jpg) Live 3D factory twin |
+| ![Department panel](docs/screenshots/factory-department.jpg) Finished goods: shortage of 32 for Distributor B | ![Costing](docs/screenshots/costing.jpg) Costing: ₹5,855 ÷ 188 = ₹31.14 |
+| ![Mobile order entry](docs/screenshots/mobile-order.jpg) Salesman mobile order entry | ![Factory tour](docs/screenshots/landing-tour.jpg) Landing-page factory tour |
+| ![Owner dashboard](docs/screenshots/dashboard.jpg) Owner overview with period filter | ![Twin on a phone](docs/screenshots/factory-mobile.jpg) The twin on a phone (portrait framing) |
 
 ## Installation and local run
 
@@ -175,7 +223,9 @@ All accounts use the password **`Demo@1234`** (fictional demo data). The login p
 | `npm run benchmark:reset` | Drops and recreates the schema, applies migrations and runs the seed. **Reproducible:** run it any time to get back to the exact benchmark state |
 | `npm run db:seed` | Seeds an empty database (refuses to run twice) |
 | `npm run benchmark:verify` | Prints the expected-vs-actual table from the current database and exits non-zero on any mismatch |
-| `npm run demo:fresh` | Wipes the database and loads **only** master data and opening stock, so the scenario can be entered live in the UI (see [DEMO_GUIDE.md](DEMO_GUIDE.md)). After entering steps 1–10, the Benchmark check page shows 25/25 |
+| `npm run demo:fresh` | Wipes the database and loads **only** master data and opening stock, so the scenario can be entered live in the UI (see [DEMO_SCRIPT.md](DEMO_SCRIPT.md)). After entering steps 1–10, the Benchmark check page shows 25/25 |
+| `npm run demo:extras` | Adds the non-benchmark demo data (one open purchase order for packaging) to an already-seeded database. The seed runs it automatically; it never moves stock |
+| `npm run factory:print` | Prints the live digital-twin status of every department from the current database |
 
 The seed creates fictional master data (company, 6 users, 5 products, 12 materials, 3 suppliers, Retailer A in Tamil Nadu and Distributor B in Karnataka) and the opening stock. It then **replays the mandatory scenario through the service layer**: purchase, production run, orders, approval, invoice, dispatch, shortage check, payment and expenses. The in-app **Benchmark check** page (Owner, Admin, Accountant) shows the same comparison live.
 
@@ -206,7 +256,9 @@ All 25 checks pass (`npm run benchmark:verify`, the automated tests and the in-a
 | Total production cost | ₹5,855 | ₹5,855.00 |
 | Cost per good packet | ≈ ₹31.14 | ₹31.14 (31.1436) |
 
-Step-by-step ledger evidence: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
+Step-by-step ledger evidence: [BENCHMARK.md](BENCHMARK.md).
+
+**How to run the benchmark:** `npm run benchmark:reset` rebuilds the database and replays the scenario (it prints the 25-row check table), `npm run benchmark:verify` re-checks the current database, `npm run test:benchmark` replays it on the test database with assertions, and the in-app **Benchmark check** page shows the same table live.
 
 ## Costing assumptions
 
@@ -231,13 +283,13 @@ Step-by-step ledger evidence: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
 
 | Command | Scope |
 |---|---|
-| `npm test` | Everything below except the smoke test |
-| `npm run test:unit` | 23 unit tests: decimals, Indian number formatting, GST (CGST/SGST, IGST, rounding, words), GSTIN checksum, unit conversions, weighted average, BOM explosion, variances, costing, overhead allocation, FY numbering, permissions |
-| `npm run test:benchmark` | 22 integration tests on a real PostgreSQL test DB: resets it, seeds, replays the scenario through the services and asserts every benchmark figure, ledger reconciliation, frozen historical cost, duplicate completion and dispatch, idempotent offline sync, payment over-allocation, negative stock, DB-level immutability, the Distributor B shortage and partial IGST invoice, and credit-note cancellation |
-| `npm run test:smoke` | 174 HTTP checks against a running server (`npm run build && npm start`): every navigation page per role, permission denials, CSRF/origin blocking, validation, the sales workflow, and all 18 reports in CSV/XLSX/PDF. It changes data, so run `npm run benchmark:reset` afterwards |
+| `npm test` | Everything below except the smoke test: **68 tests** |
+| `npm run test:unit` | 34 unit tests: decimals, Indian number formatting, GST (CGST/SGST, IGST, rounding, words), GSTIN checksum, unit conversions, weighted average, BOM explosion, variances, costing, overhead allocation, FY numbering, the role permission matrix, navigation-vs-permission consistency and the digital-twin status rules |
+| `npm run test:benchmark` | 34 integration tests on a real PostgreSQL test DB. `benchmark.test.ts` (22): resets it, seeds, replays the scenario through the services and asserts every benchmark figure, ledger reconciliation, frozen historical cost, duplicate completion and dispatch, idempotent offline sync, payment over-allocation, negative stock, DB-level immutability, the Distributor B shortage and partial IGST invoice, and credit-note cancellation. `workflows.test.ts` (12): the twin snapshot matches the benchmark and changes after a posting; PO → partial receipt → over-receipt refused → received; admin order amendment with before/after audit; stock adjustment; partial payment; real API routes as each role (401/403/200) |
+| `npm run test:smoke` | 203 HTTP checks against a running server (`npm run build && npm start`; set `BASE_URL` for another host): every navigation page per role including the 3D factory, costing and purchase orders, permission denials, twin/search/notification/PO/amend API permissions, CSRF/origin blocking, validation, the sales workflow, and all 18 reports in CSV/XLSX/PDF. It changes data, so run `npm run benchmark:reset` afterwards |
 | `npm run typecheck`, `npm run lint` | TypeScript strict and ESLint (zero warnings) |
 
-Results at delivery: 45/45 Vitest tests, 174/174 smoke checks, 25/25 benchmark checks, clean typecheck, lint and production build. The UI forms were also driven end to end in headless Microsoft Edge (login, mobile order entry, approve → invoice → dispatch, payment, purchase, customer, settings, BOM new version + activation, production plan → start → complete, expense) with no console errors or horizontal overflow at 390 px.
+Results at delivery (18 Nov 2026): **68/68 Vitest tests**, **203/203 smoke checks** against the production build, 25/25 benchmark checks, clean typecheck, lint (zero warnings) and production build. The UI forms were also driven end to end in headless Microsoft Edge (login, mobile order entry, approve → invoice → dispatch, payment, purchase, customer, settings, BOM new version + activation, production plan → start → complete, expense) with no console errors or horizontal overflow at 390 px. In this round the new flows (mobile order → admin edit and approval, purchase-order goods receipt, the 3D twin's department selection, list, tour and reset) were driven in headless Chromium while recording the demo video, and the landing page, twin, costing and dashboard were checked at 1440 px and 390 px with no console errors.
 
 ## Known limitations
 
@@ -247,14 +299,15 @@ These are deliberate scope limits for a prototype, stated plainly:
 * **Offline mode** covers salesman order capture only. The device must have opened the order screen online once (to cache the page and catalogue). The queue lives in `localStorage`, so clearing browser data before syncing loses it. The service worker runs only in production builds.
 * **Production reservations:** stock is validated when a run starts and again atomically at completion, but it is not reserved in between. A competing run can consume it, and completion then fails with a clear shortage message.
 * **Batch/expiry:** batch numbers and expiry dates are recorded on receipts and production output, and expiry alerts are raised, but consumption is not tracked per batch (no FEFO picking).
-* **Overheads recorded after a run completes** update its costing snapshot but are not re-capitalised into finished goods that may already be partly sold. Stock valuation therefore excludes them (documented in DESIGN_NOTE).
+* **Overheads recorded after a run completes** update its costing snapshot but are not re-capitalised into finished goods that may already be partly sold. Stock valuation therefore excludes them (documented in DESIGN.md).
 * **Invoice cancellation** is blocked once a payment is allocated to the invoice. A payment-reversal workflow is not implemented.
-* **Purchases** post immediately (no PO approval stage). Supplier returns are valued at the current weighted average.
+* **Purchase orders** have no approval step (a PO raised by the admin or supervisor is effective at once) and no supplier-facing PDF. Supplier returns are valued at the current weighted average.
+* **Order amendment** is allowed only before invoicing; after that the route is cancel-with-credit-note and re-invoice.
 * **Users and roles** are seeded. There is no user-administration UI, and roles are fixed in code.
 * Login rate limiting is in-memory (one server instance). Use a shared store if you scale out.
 * PDF documents use the standard PDF fonts, which lack the ₹ glyph, so PDFs show "INR" or "Rs." (screens, CSV and Excel use ₹).
 * One company, one factory, INR only, IST business dates.
-* The 3D landing page needs WebGL. Without it, or with reduced motion, a static diagram is shown.
+* **3D digital twin:** a schematic procedural model, not a CAD/BIM model of a real building. It refreshes by polling every 15 s rather than push. Cooling, mixing and frying are not separate ERP transactions, so they reflect the run in progress and the latest completed run's material variances. Without WebGL the twin is shown as a list.
 * Not load-tested. Reports run synchronously (the audit trail report is capped at 2,000 rows).
 
 ## Deployment
@@ -278,26 +331,50 @@ The app is a standard Next.js Node server plus PostgreSQL.
 
 ```
 prisma/
-  schema.prisma                 data model (34 models)
+  schema.prisma                 data model (36 models)
   migrations/                   SQL migrations incl. integrity triggers
   seed.ts, seed/                fictional master data + benchmark scenario (runs through services)
 src/
   app/
-    page.tsx                    public landing page (Vanta hero + scroll story)
+    page.tsx                    public landing page (hero, Sell → Make → Bill, 3D factory tour)
     login/                      sign-in
-    (app)/                      authenticated pages (dashboard, orders, invoices, production, bom, reports, …)
+    (app)/                      authenticated pages (dashboard, factory, orders, invoices, purchase-orders, production, bom, costing, reports, …)
     api/                        route handlers (one per command)
   components/
     ui/                         shadcn-style primitives
     app/, forms/, charts/       shell, widgets, React Hook Form forms, Recharts wrappers
-    landing/                    Vanta hero, three.js story scene, capability checks
-  lib/                          pure domain logic (decimal, gst, gstin, units, valuation, production, permissions, validation)
+    factory/                    3D digital twin: factory-scene.ts (Three.js), factory-props.ts (procedural machines), factory-twin.tsx (UI)
+    landing/                    Vanta hero, intro animation, WebGL/motion capability checks
+  lib/                          pure domain logic (decimal, gst, gstin, units, valuation, production, permissions, validation, factory status rules)
   server/
     services/                   business workflows (transactions)
     inventory.ts                ledger posting + reconciliation
-    queries/, reports/, pdf/    read models, report engine + exports, PDF rendering
+    queries/, reports/, pdf/    read models (incl. factory.ts twin snapshot), report engine + exports, PDF rendering
     auth/                       sessions, password hashing
 tests/                          unit + integration (Vitest)
-scripts/                        benchmark verify, HTTP smoke test, icon generator
+scripts/                        benchmark verify, twin print, demo extras, HTTP smoke test, icon generator
+docs/screenshots/               README screenshots
+demo/                           demo video narration, subtitles and recording script
 public/                         manifest, service worker, icons
 ```
+
+## Commit, push and deploy
+
+Nothing in this round has been committed, pushed or deployed. To publish it yourself:
+
+```bash
+# review and commit
+git status
+git add -A
+git commit -m "Add 3D factory digital twin, purchase orders, order amendment, costing page, search and notifications"
+
+# push (this repo's remotes: origin and nitt-assignment)
+git push origin main
+git push nitt-assignment main      # if you also publish to the NITT-Assignment repository
+
+# deploy to Vercel (the project is not connected to GitHub, so deploy from the CLI)
+npx vercel --prod
+```
+
+The Vercel build runs `prisma migrate deploy` first, so the new `purchase_orders` migration is applied to the Neon database automatically; the seed is skipped on an already-seeded database (run `npm run demo:extras` against Neon if you want the demo purchase order there too).
+

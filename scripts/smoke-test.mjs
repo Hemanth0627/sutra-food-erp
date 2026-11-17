@@ -37,15 +37,15 @@ async function post(cookie, path, body, extraHeaders = {}) {
 }
 
 const ROLE_PAGES = {
-  "owner@sutra-erp.test": ["/dashboard", "/analytics", "/inventory", "/production", "/finance", "/alerts", "/orders", "/invoices", "/reports", "/benchmark", "/audit", "/settings"],
-  "admin@sutra-erp.test": ["/dashboard", "/orders", "/customers", "/products", "/suppliers", "/purchases", "/purchases/new", "/invoices", "/dispatch", "/payments", "/inventory", "/reports", "/expenses", "/alerts", "/benchmark", "/audit", "/settings"],
+  "owner@sutra-erp.test": ["/dashboard", "/dashboard?period=fy", "/factory", "/costing", "/purchase-orders", "/customers", "/products", "/purchases", "/suppliers", "/bom", "/payments", "/analytics", "/inventory", "/production", "/finance", "/alerts", "/orders", "/invoices", "/reports", "/benchmark", "/audit", "/settings"],
+  "admin@sutra-erp.test": ["/dashboard", "/factory", "/purchase-orders", "/purchase-orders/new", "/costing", "/orders", "/customers", "/products", "/suppliers", "/purchases", "/purchases/new", "/invoices", "/dispatch", "/payments", "/inventory", "/reports", "/expenses", "/alerts", "/benchmark", "/audit", "/settings"],
   "salesman.a@sutra-erp.test": ["/dashboard", "/orders/new", "/orders", "/customers", "/products", "/sales-summary"],
-  "production@sutra-erp.test": ["/dashboard", "/bom", "/bom/new", "/production/new", "/production", "/production/consumption", "/production/variance", "/inventory?tab=RAW_MATERIAL", "/purchases", "/expenses", "/alerts"],
-  "accounts@sutra-erp.test": ["/dashboard", "/reports/sales-register", "/reports/purchase-register", "/reports/gst-summary", "/reports?group=Inventory", "/reports?group=Production", "/reports/collections", "/reports/outstanding", "/reports/monthly-audit", "/invoices", "/reports", "/audit", "/benchmark"],
+  "production@sutra-erp.test": ["/dashboard", "/factory", "/costing", "/purchase-orders", "/bom", "/bom/new", "/production/new", "/production", "/production/consumption", "/production/variance", "/inventory?tab=RAW_MATERIAL", "/purchases", "/expenses", "/alerts"],
+  "accounts@sutra-erp.test": ["/dashboard", "/factory", "/costing", "/reports/sales-register", "/reports/purchase-register", "/reports/gst-summary", "/reports?group=Inventory", "/reports?group=Production", "/reports/collections", "/reports/outstanding", "/reports/monthly-audit", "/invoices", "/reports", "/audit", "/benchmark"],
 };
 const DENIED = {
-  "salesman.a@sutra-erp.test": ["/invoices", "/payments", "/reports", "/inventory", "/settings"],
-  "accounts@sutra-erp.test": ["/orders/new", "/purchases/new", "/production/new", "/settings"],
+  "salesman.a@sutra-erp.test": ["/invoices", "/payments", "/reports", "/inventory", "/settings", "/factory", "/purchase-orders", "/costing"],
+  "accounts@sutra-erp.test": ["/orders/new", "/purchases/new", "/purchase-orders/new", "/production/new", "/settings"],
   "production@sutra-erp.test": ["/payments", "/invoices", "/settings"],
   "owner@sutra-erp.test": ["/purchases/new", "/orders/new"],
 };
@@ -93,6 +93,12 @@ async function main() {
   check("accountant cannot record payments (403)", (await post(acct, "/api/payments", {})).status === 403);
   check("supervisor cannot dispatch (403)", (await post(sup, "/api/dispatch", { invoiceId: "x" })).status === 403);
   check("owner cannot place orders (403)", (await post(owner, "/api/orders", {})).status === 403);
+  check("salesman cannot read the factory twin (403)", (await get(sales, "/api/factory")).status === 403);
+  check("accountant can read the factory twin (200)", (await get(acct, "/api/factory")).status === 200);
+  check("accountant cannot raise purchase orders (403)", (await post(acct, "/api/purchase-orders", {})).status === 403);
+  check("salesman cannot amend orders (403)", (await fetch(`${BASE}/api/orders/x`, { method: "PATCH", headers: { cookie: sales, "content-type": "application/json", origin: BASE }, body: "{}" })).status === 403);
+  check("search is role-filtered (salesman sees no invoices)", !JSON.stringify(await (await get(sales, "/api/search?q=INV")).json()).includes("Invoice"));
+  check("notifications respond for every role", (await get(sales, "/api/notifications")).status === 200 && (await get(owner, "/api/notifications")).status === 200);
   check("cross-site POST blocked (403)", (await post(admin, "/api/customers", {}, { origin: "https://evil.example" })).status === 403);
   const invalid = await post(admin, "/api/customers", { name: "Test", type: "RETAILER", gstin: "33ABCDE1234F1Z0", phone: "9000000000", addressLine: "Street 1", city: "Chennai", stateCode: "33", creditLimit: "1000", paymentTermsDays: 30 });
   check("invalid GSTIN rejected (400)", invalid.status === 400, JSON.stringify(invalid.json.error?.message));

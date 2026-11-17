@@ -7,6 +7,7 @@ import { badRequest, conflict, notFound } from "../errors";
 import { postMovement } from "../inventory";
 import { nextDocumentNumber } from "../sequence";
 import { parseDateInput } from "./common";
+import { receiveAgainstPurchaseOrder } from "./purchase-orders";
 
 /**
  * Posts a purchase invoice / goods receipt. Each line increases stock through a PURCHASE_RECEIPT
@@ -41,6 +42,11 @@ export async function createPurchase(actor: Actor, input: PurchaseInput) {
       return { line, item, unit, stockQty, stockRate, taxableValue, taxAmount, lineTotal: taxableValue.plus(taxAmount) };
     });
 
+    // Receipt against a purchase order: validate against the locked PO and advance its received qty.
+    const poResult = input.purchaseOrderId
+      ? await receiveAgainstPurchaseOrder(tx, input.purchaseOrderId, supplier.id, input.items)
+      : null;
+
     const invoiceDate = parseDateInput(input.invoiceDate, new Date());
     const receivedDate = parseDateInput(input.receivedDate, invoiceDate);
     const { number } = await nextDocumentNumber(tx, "PUR", receivedDate);
@@ -50,6 +56,7 @@ export async function createPurchase(actor: Actor, input: PurchaseInput) {
         purchaseNo: number,
         supplierId: supplier.id,
         supplierInvoiceNo: input.supplierInvoiceNo,
+        purchaseOrderId: input.purchaseOrderId ?? null,
         invoiceDate,
         receivedDate,
         taxableTotal: sum(lines.map((l) => l.taxableValue)).toFixed(2),
@@ -76,6 +83,7 @@ export async function createPurchase(actor: Actor, input: PurchaseInput) {
           lineTotal: l.lineTotal.toFixed(2),
           batchNo: l.line.batchNo ?? null,
           expiryDate: l.line.expiryDate ? parseDateInput(l.line.expiryDate, receivedDate) : null,
+          purchaseOrderItemId: l.line.purchaseOrderItemId ?? null,
         },
       });
       await postMovement(tx, {
@@ -95,7 +103,7 @@ export async function createPurchase(actor: Actor, input: PurchaseInput) {
       });
     }
 
-    await audit(tx, actor, "purchase.post", "Purchase", purchase.id, `Posted purchase ${purchase.purchaseNo} from ${supplier.name}: ₹${purchase.grandTotal}`, {
+    await audit(tx, actor, "purchase.post", "Purchase", purchase.id, `Posted purchase ${purchase.purchaseNo} from ${supplier.name}: ₹${purchase.grandTotal}${poResult ? ` against ${poResult.poNo} (now ${poResult.status.toLowerCase().replace(/_/g, " ")})` : ""}`, {
       lines: lines.map((l) => ({ item: l.item.code, qty: l.stockQty.toFixed(), unit: l.item.unit.code, rate: l.stockRate.toDecimalPlaces(6).toFixed() })),
     });
     return purchase;

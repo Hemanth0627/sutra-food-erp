@@ -15,15 +15,25 @@ export const NAV: Record<Role, NavSection[]> = {
   OWNER: [
     { items: [
       { href: "/dashboard", label: "Overview", icon: "dashboard" },
+      { href: "/factory", label: "3D Factory", icon: "factory" },
       { href: "/analytics", label: "Analytics", icon: "analytics" },
-      { href: "/inventory", label: "Inventory overview", icon: "inventory" },
-      { href: "/production", label: "Production overview", icon: "production" },
       { href: "/finance", label: "Financial overview", icon: "finance" },
       { href: "/alerts", label: "Alerts", icon: "alerts" },
     ] },
-    { title: "Records", items: [
+    { title: "Operations", items: [
       { href: "/orders", label: "Orders", icon: "orders" },
       { href: "/invoices", label: "Invoices", icon: "invoices" },
+      { href: "/customers", label: "Customers", icon: "customers" },
+      { href: "/products", label: "Products", icon: "products" },
+      { href: "/purchases", label: "Purchases", icon: "purchases" },
+      { href: "/suppliers", label: "Suppliers", icon: "suppliers" },
+      { href: "/inventory", label: "Inventory", icon: "inventory" },
+      { href: "/production", label: "Production", icon: "production" },
+      { href: "/bom", label: "BOM", icon: "bom" },
+      { href: "/costing", label: "Costing", icon: "costing" },
+      { href: "/payments", label: "Payments", icon: "payments" },
+    ] },
+    { title: "Records", items: [
       { href: "/reports", label: "Reports", icon: "reports" },
       { href: "/benchmark", label: "Benchmark check", icon: "benchmark" },
       { href: "/audit", label: "Audit log", icon: "audit" },
@@ -33,10 +43,12 @@ export const NAV: Record<Role, NavSection[]> = {
   ADMIN: [
     { items: [
       { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+      { href: "/factory", label: "3D Factory", icon: "factory" },
       { href: "/orders", label: "Orders", icon: "orders" },
       { href: "/customers", label: "Customers", icon: "customers" },
       { href: "/products", label: "Products", icon: "products" },
       { href: "/suppliers", label: "Suppliers", icon: "suppliers" },
+      { href: "/purchase-orders", label: "Purchase orders", icon: "po" },
       { href: "/purchases", label: "Purchases", icon: "purchases" },
       { href: "/invoices", label: "Invoices", icon: "invoices" },
       { href: "/dispatch", label: "Dispatch", icon: "dispatch" },
@@ -45,6 +57,8 @@ export const NAV: Record<Role, NavSection[]> = {
       { href: "/reports", label: "Reports", icon: "reports" },
     ] },
     { title: "Control", items: [
+      { href: "/production", label: "Production", icon: "production" },
+      { href: "/costing", label: "Costing", icon: "costing" },
       { href: "/expenses", label: "Production expenses", icon: "expenses" },
       { href: "/alerts", label: "Alerts", icon: "alerts" },
       { href: "/benchmark", label: "Benchmark check", icon: "benchmark" },
@@ -65,14 +79,17 @@ export const NAV: Record<Role, NavSection[]> = {
   PRODUCTION_SUPERVISOR: [
     { items: [
       { href: "/dashboard", label: "Production dashboard", icon: "dashboard" },
+      { href: "/factory", label: "3D Factory", icon: "factory" },
       { href: "/bom", label: "Bill of materials", icon: "bom" },
       { href: "/production/new", label: "New production run", icon: "new" },
       { href: "/production", label: "Production history", icon: "history" },
       { href: "/production/consumption", label: "Material consumption", icon: "consumption" },
       { href: "/production/variance", label: "Variance analysis", icon: "variance" },
+      { href: "/costing", label: "Costing", icon: "costing" },
       { href: "/inventory?tab=RAW_MATERIAL", label: "Raw-material inventory", icon: "inventory" },
     ] },
     { title: "Stores", items: [
+      { href: "/purchase-orders", label: "Purchase orders", icon: "po" },
       { href: "/purchases", label: "Material receipts", icon: "purchases" },
       { href: "/expenses", label: "Production expenses", icon: "expenses" },
       { href: "/alerts", label: "Alerts", icon: "alerts" },
@@ -81,6 +98,7 @@ export const NAV: Record<Role, NavSection[]> = {
   ACCOUNTANT: [
     { items: [
       { href: "/dashboard", label: "Accounting dashboard", icon: "dashboard" },
+      { href: "/factory", label: "3D Factory", icon: "factory" },
       { href: "/reports/sales-register", label: "Sales register", icon: "invoices" },
       { href: "/reports/purchase-register", label: "Purchase register", icon: "purchases" },
       { href: "/reports/gst-summary", label: "GST reports", icon: "gst" },
@@ -89,6 +107,7 @@ export const NAV: Record<Role, NavSection[]> = {
       { href: "/reports/collections", label: "Collections", icon: "payments" },
       { href: "/reports/outstanding", label: "Outstanding", icon: "finance" },
       { href: "/reports/monthly-audit", label: "Audit reports", icon: "audit" },
+      { href: "/costing", label: "Costing", icon: "costing" },
     ] },
     { title: "Records", items: [
       { href: "/invoices", label: "Invoices", icon: "receipt" },
@@ -116,7 +135,8 @@ const LABELS: Record<string, string> = {
   audit: "Audit log", settings: "Settings", benchmark: "Benchmark", "sales-summary": "Sales summary",
   "gst-summary": "GST summary", "monthly-audit": "Monthly audit", "sales-register": "Sales register",
   "purchase-register": "Purchase register", "planned-vs-actual": "Planned vs actual", "cost-per-packet": "Cost per packet",
-  "receivables-ageing": "Receivables ageing", edit: "Edit",
+  "receivables-ageing": "Receivables ageing", edit: "Edit", factory: "3D Factory", costing: "Costing",
+  "purchase-orders": "Purchase orders",
 };
 
 export function breadcrumbLabel(segment: string): string {

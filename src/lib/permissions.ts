@@ -49,12 +49,14 @@ export const PERMISSIONS = [
   "reports:export",
   "audit:view",
   "settings:manage",
+  "factory:view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
 
 const ALL_VIEW: Permission[] = [
   "dashboard:owner",
+  "factory:view",
   "analytics:view",
   "alerts:view",
   "orders:view-all",
@@ -77,6 +79,7 @@ const ALL_VIEW: Permission[] = [
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   OWNER: [...ALL_VIEW, "settings:manage"],
   ADMIN: [
+    "factory:view",
     "alerts:view",
     "orders:create",
     "orders:view-all",
@@ -109,6 +112,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ],
   SALESMAN: ["orders:create", "orders:view-own", "customers:view", "products:view"],
   PRODUCTION_SUPERVISOR: [
+    "factory:view",
     "alerts:view",
     "bom:view",
     "bom:manage",
@@ -123,6 +127,8 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "expenses:manage",
   ],
   ACCOUNTANT: [
+    "factory:view",
+    "alerts:view",
     "orders:view-all",
     "customers:view",
     "products:view",

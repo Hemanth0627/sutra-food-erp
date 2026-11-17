@@ -60,6 +60,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               canApprove={canApprove}
               canInvoice={canInvoice && ["APPROVED", "PARTIALLY_FULFILLED"].includes(order.status)}
               canCancelOwn={user.role === "SALESMAN" && order.status === "PENDING" && order.salesmanId === user.id}
+              canAmend={canApprove && ["PENDING", "APPROVED"].includes(order.status) && order.invoices.length === 0}
+              editable={order.items.map((i) => ({ orderItemId: i.id, productName: i.product.item.name, quantity: D(i.quantity).toFixed(), rate: D(i.rate).toFixed(2) }))}
               lines={availability.map((a) => ({ orderItemId: a.orderItemId, productName: a.productName, remaining: a.remaining, available: a.available, canInvoiceNow: a.canInvoiceNow }))}
             />
           </>

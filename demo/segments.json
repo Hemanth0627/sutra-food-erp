@@ -1,0 +1,98 @@
+[
+  {
+    "id": "01-intro",
+    "title": "Introduction",
+    "say": "Sutra runs a snack factory, from flour sack to G S T invoice. It is an E R P for a South Indian packaged-snack maker. Salesmen take orders on their phones, the factory makes murukku to a recipe, every stock movement lands in one ledger, and the office invoices and collects. The landing page explains all thirteen factory departments in a one-minute tour.",
+    "sub": "Sutra runs a snack factory, from flour sack to GST invoice. It is an ERP for a South Indian packaged-snack maker. Salesmen take orders on their phones, the factory makes murukku to a recipe, every stock movement lands in one ledger, and the office invoices and collects. The landing page explains all 13 factory departments in a one-minute tour."
+  },
+  {
+    "id": "02-roles",
+    "title": "Login and role-based dashboards",
+    "say": "Five roles share one database, each with its own workspace: owner, admin, salesman, production supervisor and accountant. Every page and every A P I call checks permissions on the server. The owner's overview shows sales, production yield, stock, cost per packet and receivables, all calculated from posted records.",
+    "sub": "Five roles share one database, each with its own workspace: Owner, Admin, Salesman, Production Supervisor and Accountant. Every page and every API call checks permissions on the server. The Owner's overview shows sales, production yield, stock, cost per packet and receivables, all calculated from posted records."
+  },
+  {
+    "id": "03-mobile-order",
+    "title": "Mobile salesman order entry",
+    "say": "Salesman A works from a phone. Choose Retailer A, tap in twenty packets of mixture, check the value, and place the order. It takes well under a minute. If the network drops, the order waits on the phone and syncs once, without duplicates.",
+    "sub": "Salesman A works from a phone. Choose Retailer A, tap in 20 packets of Mixture, check the value, and place the order. It takes well under a minute. If the network drops, the order waits on the phone and syncs once, without duplicates."
+  },
+  {
+    "id": "04-admin-approval",
+    "title": "Admin order approval",
+    "say": "In the office, the admin sees the new order with a live stock check: requested, available, and any shortage. Quantities or rates can be corrected before invoicing, and the old and new values are kept in the audit log. Here the stock is sufficient, so the admin approves.",
+    "sub": "In the office, the Admin sees the new order with a live stock check: requested, available, and any shortage. Quantities or rates can be corrected before invoicing, and the old and new values are kept in the audit log. Here the stock is sufficient, so the Admin approves."
+  },
+  {
+    "id": "05-gst-invoice",
+    "title": "GST invoice and dispatch",
+    "say": "For the benchmark, Retailer A ordered one hundred and fifty packets of murukku at fifty rupees. Factory and customer are both in Tamil Nadu, so the invoice charges C G S T and S G S T at two and a half percent each. Seven thousand five hundred, plus one hundred and eighty-seven fifty twice, gives seven thousand eight hundred and seventy-five rupees. Invoices are numbered by financial year, download as P D F, and can only be cancelled through a credit note. Dispatch deducted the packets from stock exactly once.",
+    "sub": "For the benchmark, Retailer A ordered 150 packets of Murukku at ₹50. Factory and customer are both in Tamil Nadu, so the invoice charges CGST and SGST at 2.5% each: ₹7,500 + ₹187.50 + ₹187.50 = ₹7,875. Invoices are numbered by financial year, download as PDF, and can only be cancelled through a credit note. Dispatch deducted the packets from stock exactly once."
+  },
+  {
+    "id": "06-purchase",
+    "title": "Purchase order and goods receipt",
+    "say": "Purchases can start with a purchase order. The benchmark purchase of sixty kilos of flour at forty-five rupees took flour from one hundred to one hundred and sixty kilos, and the weighted average cost from forty-two to forty-three point one two five rupees per kilo. Now we receive packaging against an open purchase order. The form is pre-filled with the balance, and posting adds the stock through the ledger.",
+    "sub": "Purchases can start with a purchase order. The benchmark purchase of 60 kg of flour at ₹45 took flour from 100 to 160 kg, and the weighted-average cost from ₹42 to ₹43.125 per kg. Now we receive packaging against an open purchase order. The form is pre-filled with the balance, and posting adds the stock through the ledger."
+  },
+  {
+    "id": "07-production",
+    "title": "BOM and production run",
+    "say": "Production follows a versioned bill of materials: forty kilos of flour, ten litres of oil, one point two kilos of spice, two hundred pouches and ten cartons for two hundred packets. The run used ten and a half litres of oil and produced one hundred and eighty-eight good packets, with six pouches damaged and nine cartons used. Completing the run posted every movement in a single database transaction.",
+    "sub": "Production follows a versioned bill of materials: 40 kg flour, 10 L oil, 1.2 kg spice, 200 pouches and 10 cartons for 200 packets. The run used 10.5 L of oil and produced 188 good packets, with 6 pouches damaged and 9 cartons used. Completing the run posted every movement in a single database transaction."
+  },
+  {
+    "id": "08-planned-actual",
+    "title": "Planned versus actual consumption",
+    "say": "Planned versus actual consumption is calculated for every material. Oil used ten point five litres against ten, a variance of plus five percent. That is beyond the three percent tolerance, so it is flagged.",
+    "sub": "Planned versus actual consumption is calculated for every material. Oil used 10.5 L against 10 L, a variance of +5%. That is beyond the 3% tolerance, so it is flagged."
+  },
+  {
+    "id": "09-yield",
+    "title": "Yield and wastage",
+    "say": "The yield was one hundred and eighty-eight packets against two hundred expected: a variance of minus six percent. Damaged pouches are recorded separately as wastage, and they are still costed.",
+    "sub": "The yield was 188 packets against 200 expected: a variance of −6%. Damaged pouches are recorded separately as wastage, and they are still costed."
+  },
+  {
+    "id": "10-stock-ledger",
+    "title": "Stock ledger",
+    "say": "Every stock change is a row in an append-only ledger, with the document, the user, and the balance before and after. Flour closes at one hundred and twenty kilos, oil at nineteen and a half litres, and pouches at three hundred and six. Finished goods went from fifty to two hundred and thirty-eight, then to eighty-eight after dispatch.",
+    "sub": "Every stock change is a row in an append-only ledger, with the document, the user, and the balance before and after. Flour closes at 120 kg, oil at 19.5 L, and pouches at 306. Finished goods went from 50 to 238, then to 88 after dispatch."
+  },
+  {
+    "id": "11-costing",
+    "title": "Cost per packet",
+    "say": "Costing uses the weighted average. Flour seventeen twenty-five, oil fourteen seventy, spice two forty, pouches four eighty-five including the damaged ones, cartons one thirty-five, labour twelve hundred, and gas and power six hundred. The run cost five thousand eight hundred and fifty-five rupees. Divided by one hundred and eighty-eight good packets, that is thirty-one rupees and fourteen paise per packet.",
+    "sub": "Costing uses the weighted average: flour ₹1,725, oil ₹1,470, spice ₹240, pouches ₹485 including the damaged ones, cartons ₹135, labour ₹1,200, gas and power ₹600. The run cost ₹5,855. Divided by 188 good packets, that is ₹31.14 per packet."
+  },
+  {
+    "id": "12-payment",
+    "title": "Retailer A payment",
+    "say": "Retailer A paid four thousand rupees by U P I. It is allocated against the invoice, leaving three thousand eight hundred and seventy-five rupees outstanding, which also shows in the receivables ageing.",
+    "sub": "Retailer A paid ₹4,000 by UPI. It is allocated against the invoice, leaving ₹3,875 outstanding, which also shows in the receivables ageing."
+  },
+  {
+    "id": "13-shortage",
+    "title": "Distributor B stock shortage",
+    "say": "Distributor B in Karnataka ordered one hundred and twenty packets. Only eighty-eight are available, so the system shows a shortage of thirty-two, and it will not invoice or dispatch stock that does not exist. Because Karnataka is another state, the invoice would charge I G S T instead.",
+    "sub": "Distributor B in Karnataka ordered 120 packets. Only 88 are available, so the system shows a shortage of 32, and it will not invoice or dispatch stock that does not exist. Because Karnataka is another state, the invoice would charge IGST instead."
+  },
+  {
+    "id": "14-reports",
+    "title": "Monthly reports",
+    "say": "The accountant has read-only access to every register: sales, purchases, G S T outward supplies, stock, production, costing, collections and ageing. Every report filters by date and exports to C S V, Excel or P D F, and the monthly audit report brings them all together.",
+    "sub": "The Accountant has read-only access to every register: sales, purchases, GST outward supplies, stock, production, costing, collections and ageing. Every report filters by date and exports to CSV, Excel or PDF, and the monthly audit report brings them all together."
+  },
+  {
+    "id": "15-digital-twin",
+    "title": "Interactive 3D factory digital twin",
+    "say": "Finally, the 3D digital twin. Every department is coloured from the database: green is normal, amber needs attention, red is critical, and grey is idle, always with a text label. The finished goods warehouse is red, because Distributor B is short by thirty-two packets. Frying is amber for the oil overrun. The packaging store shows the pouches we just received. Machines only move while a run is actually in progress, so right now the line is honestly idle. A guided tour walks through every department.",
+    "sub": "Finally, the 3D digital twin. Every department is coloured from the database: green is normal, amber needs attention, red is critical, and grey is idle, always with a text label. The finished-goods warehouse is red, because Distributor B is short by 32 packets. Frying is amber for the oil overrun. The packaging store shows the pouches we just received. Machines only move while a run is actually in progress, so right now the line is honestly idle. A guided tour walks through every department."
+  },
+  {
+    "id": "16-summary",
+    "title": "Summary",
+    "say": "The benchmark check reads the posted records back: twenty-five out of twenty-five checks pass, and sixty-eight automated tests cover inventory, production, G S T, payments and permissions. That is Sutra: one ledger, from flour sack to G S T invoice.",
+    "sub": "The benchmark check reads the posted records back: 25 out of 25 checks pass, and 68 automated tests cover inventory, production, GST, payments and permissions. That is Sutra: one ledger, from flour sack to GST invoice."
+  }
+]

@@ -1,7 +1,7 @@
 import { financialYear } from "@/lib/dates";
 import type { Tx } from "./db";
 
-export type DocumentPrefix = "SO" | "INV" | "CN" | "DSP" | "RCPT" | "PUR" | "PR" | "PRET" | "EXP" | "ADJ";
+export type DocumentPrefix = "SO" | "INV" | "CN" | "DSP" | "RCPT" | "PO" | "PUR" | "PR" | "PRET" | "EXP" | "ADJ";
 
 /**
  * Financial-year based document numbers, e.g. INV/2026-27/0001.

@@ -15,6 +15,7 @@ async function main() {
   const { collectBenchmarkChecks, summarize } = await import("../src/server/benchmark");
   const { runBenchmarkScenario } = await import("./seed/benchmark-scenario");
   const { DEMO_USERS, seedMasterData } = await import("./seed/master-data");
+  const { seedDemoExtras } = await import("./seed/demo-extras");
   const mastersOnly = process.argv.includes("--masters-only");
   try {
     const existing = await prisma.companySettings.findUnique({ where: { id: 1 } });
@@ -26,7 +27,7 @@ async function main() {
     console.log("Seeding fictional master data and opening stock…");
     const actors = await seedMasterData(prisma, password);
     if (mastersOnly) {
-      console.log("Masters only: the benchmark transactions were NOT posted. Follow DEMO_GUIDE.md to enter them live.");
+      console.log("Masters only: the benchmark transactions were NOT posted. Follow DEMO_SCRIPT.md to enter them live.");
     } else {
       console.log("Replaying the mandatory benchmark scenario:");
       await runBenchmarkScenario(prisma, actors, (m) => console.log("  " + m));
@@ -36,6 +37,7 @@ async function main() {
       const s = summarize(checks);
       console.log(`${s.passed}/${s.total} benchmark checks passed.`);
       if (!s.allPass) process.exitCode = 1;
+      await seedDemoExtras(prisma, actors, (m) => console.log(m));
     }
     console.log("\nDemo accounts (password: " + password + "):");
     for (const u of DEMO_USERS) console.log(`  ${u.role.padEnd(22)} ${u.email}`);

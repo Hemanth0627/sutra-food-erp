@@ -23,9 +23,9 @@ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## Fireship three.js scroll animation demo
+## three.js add-ons
 
-The scroll-driven 3D story on the landing page is **inspired by** the technique in https://github.com/fireship-io/threejs-scroll-animation-demo: moving a three.js camera from the page's scroll position. That repository has no license file, so **no code or assets were copied** from it. The implementation in `src/components/landing/story-scene.ts` and `scroll-story.tsx` was written independently for this project (procedural geometry, a camera path eased between stations, GSAP ScrollTrigger progress).
+The 3D factory digital twin (`src/components/factory`) is written for this project with procedural geometry; no 3D models or textures were downloaded. It uses add-on modules that ship inside the `three` package (MIT, © three.js authors): `OrbitControls`, `CSS2DRenderer`, `RoomEnvironment` and `RoundedBoxGeometry`.
 
 ## Other open-source packages
 

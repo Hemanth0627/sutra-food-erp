@@ -80,3 +80,23 @@ export function formatMonthKey(key: string): string {
 export function daysBetween(from: Date, to: Date): number {
   return Math.floor((startOfIstDay(to).getTime() - startOfIstDay(from).getTime()) / 86400000);
 }
+
+export type PeriodKey = "today" | "7d" | "month" | "30d" | "fy";
+export const PERIODS: { key: PeriodKey; label: string }[] = [
+  { key: "today", label: "Today" },
+  { key: "7d", label: "7 days" },
+  { key: "month", label: "This month" },
+  { key: "30d", label: "30 days" },
+  { key: "fy", label: "This FY" },
+];
+
+/** Dashboard period → start instant (IST business dates). Unknown keys fall back to this month. */
+export function resolvePeriod(key: string | undefined, now = new Date()): { key: PeriodKey; label: string; from: Date } {
+  const today = startOfIstDay(now);
+  const found = PERIODS.find((p) => p.key === key) ?? PERIODS[2];
+  const { year, month } = istParts(now);
+  const fyStart = new Date(Date.UTC(month >= 4 ? year : year - 1, 3, 1) - IST_OFFSET_MS);
+  const from = { today, "7d": addDays(today, -6), month: startOfIstMonth(now), "30d": addDays(today, -29), fy: fyStart }[found.key];
+  return { ...found, from };
+}
+

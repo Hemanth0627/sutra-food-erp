@@ -108,6 +108,8 @@ export type MaterialInput = z.infer<typeof materialSchema>;
 
 export const purchaseSchema = z.object({
   supplierId: id,
+  /** Set when the goods are received against a purchase order. */
+  purchaseOrderId: z.string().min(1).optional(),
   supplierInvoiceNo: z.string().trim().min(1).max(40),
   invoiceDate: isoDate,
   receivedDate: isoDate,
@@ -122,11 +124,35 @@ export const purchaseSchema = z.object({
         gstRate: decimalField({ min: 0, max: 28, dp: 2, label: "GST rate" }),
         batchNo: optionalText,
         expiryDate: isoDate.optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
+        purchaseOrderItemId: z.string().min(1).optional(),
       }),
     )
     .min(1, "Add at least one item"),
 });
 export type PurchaseInput = z.infer<typeof purchaseSchema>;
+
+export const purchaseOrderSchema = z.object({
+  supplierId: id,
+  orderDate: isoDate,
+  expectedDate: isoDate.optional().or(z.literal("")).transform((v) => (v ? v : undefined)),
+  notes: optionalText,
+  items: z
+    .array(
+      z.object({
+        itemId: id,
+        unitId: id,
+        quantity: decimalField({ positive: true, dp: 3, label: "Quantity" }),
+        rate: decimalField({ min: 0, dp: 4, label: "Rate" }),
+        gstRate: decimalField({ min: 0, max: 28, dp: 2, label: "GST rate" }),
+      }),
+    )
+    .min(1, "Add at least one item"),
+});
+export type PurchaseOrderInput = z.infer<typeof purchaseOrderSchema>;
+
+export const purchaseOrderCancelSchema = z.object({
+  reason: z.string().trim().min(3).max(300),
+});
 
 export const purchaseReturnSchema = z.object({
   purchaseItemId: id,
@@ -213,6 +239,21 @@ export const orderCreateSchema = z.object({
     .min(1, "Add at least one product"),
 });
 export type OrderCreateInput = z.infer<typeof orderCreateSchema>;
+
+/** Admin correction of a pending/approved (not yet invoiced) order. Every change is audited. */
+export const orderAmendSchema = z.object({
+  reason: z.string().trim().min(3, "Give a reason for the change").max(300),
+  lines: z
+    .array(
+      z.object({
+        orderItemId: id,
+        quantity: decimalField({ positive: true, dp: 0, max: 100000, label: "Quantity" }),
+        rate: decimalField({ positive: true, dp: 2, max: 1000000, label: "Rate" }),
+      }),
+    )
+    .min(1),
+});
+export type OrderAmendInput = z.infer<typeof orderAmendSchema>;
 
 export const orderDecisionSchema = z.object({
   decision: z.enum(["APPROVE", "REJECT", "CANCEL"]),

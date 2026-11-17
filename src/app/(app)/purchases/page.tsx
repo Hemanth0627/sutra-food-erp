@@ -15,13 +15,18 @@ export const metadata = { title: "Purchases" };
 
 export default async function PurchasesPage() {
   const user = await requirePageUser("purchases:view");
-  const purchases = await prisma.purchase.findMany({ include: { supplier: true, items: { include: { item: true, unit: true } }, createdBy: true }, orderBy: { receivedDate: "desc" }, take: 200 });
+  const purchases = await prisma.purchase.findMany({ include: { supplier: true, purchaseOrder: { select: { poNo: true } }, items: { include: { item: true, unit: true } }, createdBy: true }, orderBy: { receivedDate: "desc" }, take: 200 });
   return (
     <>
       <PageHeader
         title="Purchases & material receipts"
         description="Each posted purchase adds stock through a purchase-receipt ledger entry and updates the weighted-average cost."
-        actions={hasPermission(user.role, "purchases:create") && <Button asChild><Link href="/purchases/new"><Plus /> Record purchase</Link></Button>}
+        actions={
+          <>
+            <Button asChild variant="outline"><Link href="/purchase-orders">Purchase orders</Link></Button>
+            {hasPermission(user.role, "purchases:create") && <Button asChild><Link href="/purchases/new"><Plus /> Record purchase</Link></Button>}
+          </>
+        }
       />
       <Card>
         {purchases.length ? (
@@ -31,7 +36,7 @@ export default async function PurchasesPage() {
               {purchases.map((p) => (
                 <TR key={p.id}>
                   <TD><Link href={`/purchases/${p.id}`} className="font-medium hover:underline">{p.purchaseNo}</Link><div className="text-[11px] text-muted-foreground">{formatDate(p.receivedDate)} · {p.createdBy.name}</div></TD>
-                  <TD>{p.supplier.name}<div className="text-[11px] text-muted-foreground">Inv {p.supplierInvoiceNo}</div></TD>
+                  <TD>{p.supplier.name}<div className="text-[11px] text-muted-foreground">Inv {p.supplierInvoiceNo}{p.purchaseOrder ? ` · ${p.purchaseOrder.poNo}` : ""}</div></TD>
                   <TD className="text-xs">{p.items.map((i) => `${formatQty(i.quantity)} ${i.unit.code} ${i.item.name} @ ${formatINR(i.rate)}`).join(", ")}</TD>
                   <TD className="tabular text-right">{formatINR(p.taxableTotal)}</TD>
                   <TD className="tabular text-right">{formatINR(p.taxTotal)}</TD>

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { D, round2, sum } from "@/lib/decimal";
-import type { OrderCreateInput } from "@/lib/validation";
+import type { OrderAmendInput, OrderCreateInput } from "@/lib/validation";
 import { audit, type Actor } from "../audit";
 import { prisma, withTransaction } from "../db";
 import { badRequest, conflict, forbidden, notFound } from "../errors";
@@ -91,5 +91,56 @@ export async function decideOrder(actor: Actor, orderId: string, decision: "APPR
     if (res.count !== 1) throw conflict(`Order ${order.orderNo} is ${order.status.toLowerCase()} and cannot be ${decision === "REJECT" ? "rejected" : "cancelled"}`);
     await audit(tx, actor, decision === "REJECT" ? "order.reject" : "order.cancel", "SalesOrder", orderId, `${decision === "REJECT" ? "Rejected" : "Cancelled"} ${order.orderNo}${reason ? `: ${reason}` : ""}`);
     return { status: decision === "REJECT" ? "REJECTED" : "CANCELLED" };
+  });
+}
+
+/**
+ * Admin correction of an order before it is invoiced (quantity or negotiated rate). The order row is
+ * locked so a concurrent approval/invoice cannot interleave, and the audit row stores every line's
+ * before/after values plus the reason, so the change is fully traceable.
+ */
+export async function amendOrder(actor: Actor, orderId: string, input: OrderAmendInput) {
+  return withTransaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "SalesOrder" WHERE id = ${orderId} FOR UPDATE`;
+    const order = await tx.salesOrder.findUnique({ where: { id: orderId }, include: { items: { include: { product: { include: { item: true } } } }, invoices: true } });
+    if (!order) throw notFound("Order");
+    if (!["PENDING", "APPROVED"].includes(order.status)) throw conflict(`Order ${order.orderNo} is ${order.status.toLowerCase()} and can no longer be changed`);
+    if (order.invoices.length || order.items.some((i) => D(i.invoicedQty).gt(0))) throw conflict("Invoiced orders cannot be changed; cancel the invoice with a credit note first");
+    const ids = input.lines.map((l) => l.orderItemId);
+    if (new Set(ids).size !== ids.length) throw badRequest("Each order line can appear only once");
+
+    const changes: { product: string; before: { quantity: string; rate: string }; after: { quantity: string; rate: string } }[] = [];
+    for (const l of input.lines) {
+      const line = order.items.find((i) => i.id === l.orderItemId);
+      if (!line) throw notFound("Order line");
+      const qty = D(l.quantity);
+      const rate = round2(D(l.rate));
+      if (qty.eq(D(line.quantity)) && rate.eq(D(line.rate))) continue;
+      await tx.salesOrderItem.update({
+        where: { id: line.id },
+        data: { quantity: qty.toFixed(), rate: rate.toFixed(2), lineAmount: round2(qty.times(rate)).toFixed(2) },
+      });
+      changes.push({
+        product: line.product.item.name,
+        before: { quantity: D(line.quantity).toFixed(), rate: D(line.rate).toFixed(2) },
+        after: { quantity: qty.toFixed(), rate: rate.toFixed(2) },
+      });
+    }
+    if (!changes.length) throw badRequest("Nothing changed");
+    const items = await tx.salesOrderItem.findMany({ where: { orderId } });
+    const subtotal = sum(items.map((i) => i.lineAmount));
+    await tx.salesOrder.update({ where: { id: orderId }, data: { subtotal: subtotal.toFixed(2) } });
+    await audit(
+      tx,
+      actor,
+      "order.amend",
+      "SalesOrder",
+      orderId,
+      `Amended ${order.orderNo}: ` +
+        changes.map((c) => `${c.product} ${c.before.quantity} @ ₹${c.before.rate} → ${c.after.quantity} @ ₹${c.after.rate}`).join("; ") +
+        ` (${input.reason})`,
+      { reason: input.reason, subtotalBefore: D(order.subtotal).toFixed(2), subtotalAfter: subtotal.toFixed(2), changes },
+    );
+    return { subtotal: subtotal.toFixed(2), changes };
   });
 }

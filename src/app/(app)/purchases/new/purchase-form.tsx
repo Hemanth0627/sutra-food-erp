@@ -18,21 +18,41 @@ import { useApi } from "@/components/app/use-api";
 type Values = z.input<typeof purchaseSchema>;
 const num = (v: unknown) => (/^\d+(\.\d+)?$/.test(String(v ?? "")) ? String(v) : "0");
 
+export interface PurchaseOrderPrefill {
+  id: string;
+  poNo: string;
+  supplierId: string;
+  lines: { purchaseOrderItemId: string; itemId: string; unitId: string; quantity: string; rate: string; gstRate: string }[];
+}
+
 export function PurchaseForm({
   suppliers,
   items,
   units,
+  po,
 }: {
   suppliers: { id: string; name: string }[];
   items: { id: string; name: string; kind: string; unitId: string; unitCode: string; dimension: string; onHand: string; avgCost: string }[];
   units: { id: string; code: string; dimension: string; toBase: string }[];
+  /** Receiving against a purchase order: supplier and lines come from the PO's open balance. */
+  po?: PurchaseOrderPrefill;
 }) {
   const router = useRouter();
   const { call, pending } = useApi();
   const today = isoDateIst(new Date());
   const form = useForm<Values>({
     resolver: zodResolver(purchaseSchema),
-    defaultValues: { supplierId: "", supplierInvoiceNo: "", invoiceDate: today, receivedDate: today, notes: "", items: [{ itemId: "", unitId: "", quantity: "", rate: "", gstRate: "0", batchNo: "", expiryDate: "" }] },
+    defaultValues: po
+      ? {
+          supplierId: po.supplierId,
+          purchaseOrderId: po.id,
+          supplierInvoiceNo: "",
+          invoiceDate: today,
+          receivedDate: today,
+          notes: `Received against ${po.poNo}`,
+          items: po.lines.map((l) => ({ ...l, batchNo: "", expiryDate: "" })),
+        }
+      : { supplierId: "", supplierInvoiceNo: "", invoiceDate: today, receivedDate: today, notes: "", items: [{ itemId: "", unitId: "", quantity: "", rate: "", gstRate: "0", batchNo: "", expiryDate: "" }] },
   });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
   const lines = useWatch({ control: form.control, name: "items" });
@@ -65,7 +85,10 @@ export function PurchaseForm({
       <Card>
         <CardContent className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Supplier" htmlFor="supplierId" error={e.supplierId?.message}>
-            <NativeSelect id="supplierId" {...form.register("supplierId")}><option value="">Select supplier</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</NativeSelect>
+            <NativeSelect id="supplierId" {...form.register("supplierId")}>
+              {!po && <option value="">Select supplier</option>}
+              {suppliers.filter((s) => !po || s.id === po.supplierId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </NativeSelect>
           </Field>
           <Field label="Supplier invoice no." htmlFor="inv" error={e.supplierInvoiceNo?.message}><Input id="inv" {...form.register("supplierInvoiceNo")} /></Field>
           <Field label="Invoice date" htmlFor="invoiceDate"><Input id="invoiceDate" type="date" {...form.register("invoiceDate")} /></Field>
@@ -91,13 +114,13 @@ export function PurchaseForm({
                         },
                       })}
                     >
-                      <option value="">Select material</option>
-                      {items.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.kind === "RAW_MATERIAL" ? "raw" : "packaging"})</option>)}
+                      {!po && <option value="">Select material</option>}
+                      {items.filter((i) => !po || i.id === lines?.[idx]?.itemId).map((i) => <option key={i.id} value={i.id}>{i.name} ({i.kind === "RAW_MATERIAL" ? "raw" : "packaging"})</option>)}
                     </NativeSelect>
                   </Field>
                   <Field label="Quantity" htmlFor={`q-${idx}`} error={le?.quantity?.message}><Input id={`q-${idx}`} inputMode="decimal" {...form.register(`items.${idx}.quantity`)} /></Field>
                   <Field label="Unit" htmlFor={`u-${idx}`} error={le?.unitId?.message}>
-                    <NativeSelect id={`u-${idx}`} {...form.register(`items.${idx}.unitId`)}><option value="">Unit</option>{unitOptions.map((u) => <option key={u.id} value={u.id}>{u.code}</option>)}</NativeSelect>
+                    <NativeSelect id={`u-${idx}`} {...form.register(`items.${idx}.unitId`)}>{!po && <option value="">Unit</option>}{unitOptions.filter((u) => !po || u.id === lines?.[idx]?.unitId).map((u) => <option key={u.id} value={u.id}>{u.code}</option>)}</NativeSelect>
                   </Field>
                   <Field label="Rate per unit (₹)" htmlFor={`r-${idx}`} error={le?.rate?.message}><Input id={`r-${idx}`} inputMode="decimal" {...form.register(`items.${idx}.rate`)} /></Field>
                   <Field label="GST %" htmlFor={`g-${idx}`} error={le?.gstRate?.message}><Input id={`g-${idx}`} inputMode="decimal" {...form.register(`items.${idx}.gstRate`)} /></Field>
@@ -116,7 +139,11 @@ export function PurchaseForm({
               </div>
             );
           })}
-          <Button type="button" variant="outline" onClick={() => append({ itemId: "", unitId: "", quantity: "", rate: "", gstRate: "0", batchNo: "", expiryDate: "" })}><Plus /> Add line</Button>
+          {po ? (
+            <p className="text-xs text-muted-foreground">Quantities default to the open balance on {po.poNo}. Reduce them for a part delivery, or remove lines that did not arrive.</p>
+          ) : (
+            <Button type="button" variant="outline" onClick={() => append({ itemId: "", unitId: "", quantity: "", rate: "", gstRate: "0", batchNo: "", expiryDate: "" })}><Plus /> Add line</Button>
+          )}
         </CardContent>
       </Card>
       <div className="mt-4 flex flex-col items-stretch justify-between gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-center">

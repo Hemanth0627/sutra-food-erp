@@ -1,0 +1,283 @@
+1
+00:00:00,300 --> 00:00:04,790
+Sutra runs a snack factory, from flour sack to GST invoice.
+
+2
+00:00:04,840 --> 00:00:08,868
+It is an ERP for a South Indian packaged-snack maker.
+
+3
+00:00:08,918 --> 00:00:14,717
+Salesmen take orders on their phones, the factory makes murukku to a recipe,
+
+4
+00:00:14,767 --> 00:00:20,796
+every stock movement lands in one ledger, and the office invoices and collects.
+
+5
+00:00:20,846 --> 00:00:26,490
+The landing page explains all 13 factory departments in a one-minute tour.
+
+6
+00:00:27,840 --> 00:00:34,481
+Five roles share one database, each with its own workspace: Owner, Admin, Salesman,
+
+7
+00:00:34,531 --> 00:00:37,464
+Production Supervisor and Accountant.
+
+8
+00:00:37,514 --> 00:00:42,543
+Every page and every API call checks permissions on the server.
+
+9
+00:00:42,593 --> 00:00:47,218
+The Owner's overview shows sales, production yield, stock,
+
+10
+00:00:47,268 --> 00:00:52,700
+cost per packet and receivables, all calculated from posted records.
+
+11
+00:00:54,050 --> 00:00:56,426
+Salesman A works from a phone.
+
+12
+00:00:56,476 --> 00:01:01,683
+Choose Retailer A, tap in 20 packets of Mixture, check the value,
+
+13
+00:01:01,733 --> 00:01:03,300
+and place the order.
+
+14
+00:01:03,350 --> 00:01:05,646
+It takes well under a minute.
+
+15
+00:01:05,696 --> 00:01:10,983
+If the network drops, the order waits on the phone and syncs once,
+
+16
+00:01:11,033 --> 00:01:12,520
+without duplicates.
+
+17
+00:01:13,870 --> 00:01:19,971
+In the office, the Admin sees the new order with a live stock check: requested,
+
+18
+00:01:20,021 --> 00:01:22,151
+available, and any shortage.
+
+19
+00:01:22,201 --> 00:01:26,355
+Quantities or rates can be corrected before invoicing,
+
+20
+00:01:26,405 --> 00:01:30,481
+and the old and new values are kept in the audit log.
+
+21
+00:01:30,531 --> 00:01:34,530
+Here the stock is sufficient, so the Admin approves.
+
+22
+00:01:35,880 --> 00:01:46,912
+For the benchmark, Retailer A ordered 150 packets of Murukku at ₹50.
+
+23
+00:01:46,962 --> 00:01:48,868
+50 = ₹7,875.
+
+24
+00:01:48,918 --> 00:01:58,157
+Invoices are numbered by financial year, download as PDF,
+
+25
+00:01:58,207 --> 00:02:05,980
+and can only be cancelled through a credit note.
+
+26
+00:02:06,030 --> 00:02:14,780
+Dispatch deducted the packets from stock exactly once.
+
+27
+00:02:16,130 --> 00:02:21,969
+Purchases can start with a purchase order.
+
+28
+00:02:22,019 --> 00:02:23,511
+125 per kg.
+
+29
+00:02:23,561 --> 00:02:31,362
+Now we receive packaging against an open purchase order.
+
+30
+00:02:31,412 --> 00:02:36,971
+The form is pre-filled with the balance,
+
+31
+00:02:37,021 --> 00:02:43,420
+and posting adds the stock through the ledger.
+
+32
+00:02:44,770 --> 00:02:52,175
+2 kg spice, 200 pouches and 10 cartons for 200 packets.
+
+33
+00:02:52,225 --> 00:03:03,560
+5 L of oil and produced 188 good packets, with 6 pouches damaged and 9 cartons used.
+
+34
+00:03:03,610 --> 00:03:13,590
+Completing the run posted every movement in a single database transaction.
+
+35
+00:03:14,940 --> 00:03:21,524
+Planned versus actual consumption is calculated for every material.
+
+36
+00:03:21,574 --> 00:03:25,089
+5 L against 10 L, a variance of +5%.
+
+37
+00:03:25,139 --> 00:03:30,040
+That is beyond the 3% tolerance, so it is flagged.
+
+38
+00:03:31,390 --> 00:03:37,738
+The yield was 188 packets against 200 expected: a variance of −6%.
+
+39
+00:03:37,788 --> 00:03:45,300
+Damaged pouches are recorded separately as wastage, and they are still costed.
+
+40
+00:03:46,650 --> 00:03:56,318
+Every stock change is a row in an append-only ledger, with the document, the user,
+
+41
+00:03:56,368 --> 00:04:00,228
+and the balance before and after.
+
+42
+00:04:00,278 --> 00:04:03,073
+5 L, and pouches at 306.
+
+43
+00:04:03,123 --> 00:04:10,420
+Finished goods went from 50 to 238, then to 88 after dispatch.
+
+44
+00:04:11,770 --> 00:04:22,858
+Costing uses the weighted average: flour ₹1,725, oil ₹1,470, spice ₹240,
+
+45
+00:04:22,908 --> 00:04:33,531
+pouches ₹485 including the damaged ones, cartons ₹135, labour ₹1,200,
+
+46
+00:04:33,581 --> 00:04:36,471
+gas and power ₹600.
+
+47
+00:04:36,521 --> 00:04:39,564
+The run cost ₹5,855.
+
+48
+00:04:39,614 --> 00:04:41,730
+14 per packet.
+
+49
+00:04:43,080 --> 00:04:46,207
+Retailer A paid ₹4,000 by UPI.
+
+50
+00:04:46,257 --> 00:04:52,986
+It is allocated against the invoice, leaving ₹3,875 outstanding,
+
+51
+00:04:53,036 --> 00:04:57,540
+which also shows in the receivables ageing.
+
+52
+00:04:58,890 --> 00:05:02,850
+Distributor B in Karnataka ordered 120 packets.
+
+53
+00:05:02,900 --> 00:05:07,968
+Only 88 are available, so the system shows a shortage of 32,
+
+54
+00:05:08,018 --> 00:05:13,257
+and it will not invoice or dispatch stock that does not exist.
+
+55
+00:05:13,307 --> 00:05:19,570
+Because Karnataka is another state, the invoice would charge IGST instead.
+
+56
+00:05:20,920 --> 00:05:26,994
+The Accountant has read-only access to every register: sales, purchases,
+
+57
+00:05:27,044 --> 00:05:33,203
+GST outward supplies, stock, production, costing, collections and ageing.
+
+58
+00:05:33,253 --> 00:05:38,477
+Every report filters by date and exports to CSV, Excel or PDF,
+
+59
+00:05:38,527 --> 00:05:43,070
+and the monthly audit report brings them all together.
+
+60
+00:05:44,420 --> 00:05:46,596
+Finally, the 3D digital twin.
+
+61
+00:05:46,646 --> 00:05:51,509
+Every department is coloured from the database: green is normal,
+
+62
+00:05:51,559 --> 00:05:57,880
+amber needs attention, red is critical, and grey is idle, always with a text label.
+
+63
+00:05:57,930 --> 00:06:04,175
+The finished-goods warehouse is red, because Distributor B is short by 32 packets.
+
+64
+00:06:04,225 --> 00:06:06,938
+Frying is amber for the oil overrun.
+
+65
+00:06:06,988 --> 00:06:11,160
+The packaging store shows the pouches we just received.
+
+66
+00:06:11,210 --> 00:06:15,382
+Machines only move while a run is actually in progress,
+
+67
+00:06:15,432 --> 00:06:18,376
+so right now the line is honestly idle.
+
+68
+00:06:18,426 --> 00:06:21,830
+A guided tour walks through every department.
+
+69
+00:06:23,180 --> 00:06:30,009
+The benchmark check reads the posted records back: 25 out of 25 checks pass,
+
+70
+00:06:30,059 --> 00:06:37,430
+and 68 automated tests cover inventory, production, GST, payments and permissions.
+
+71
+00:06:37,480 --> 00:06:42,680
+That is Sutra: one ledger, from flour sack to GST invoice.
