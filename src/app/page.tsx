@@ -6,6 +6,7 @@ import {
 import { BrandMark, BrandName } from "@/components/app/brand";
 import { HeroIntro } from "@/components/landing/hero-intro";
 import { VantaHero } from "@/components/landing/vanta-hero";
+import { BatchLab } from "@/components/landing/batch-lab";
 import { FactoryTwin } from "@/components/factory/factory-twin";
 import { getCurrentUser } from "@/server/auth/session";
 
@@ -55,8 +56,6 @@ const PILLARS = [
   },
 ];
 
-const STACK = ["Next.js 15 App Router", "React 19", "TypeScript", "PostgreSQL 17", "Prisma ORM", "Tailwind CSS 4", "shadcn/ui patterns", "Recharts", "React Hook Form + Zod", "Three.js digital twin", "Vanta.js", "GSAP", "PDFKit", "ExcelJS", "Vitest", "PWA offline queue"];
-
 /** The whole business in three steps: what a first-time visitor needs in the first 30 seconds. */
 const STEPS = [
   { icon: Smartphone, step: "1 · Sell", title: "Orders come in from the field", body: "Salesmen book orders on their phones. The admin approves them against live finished-goods stock and sees any shortage before promising delivery." },
@@ -80,7 +79,7 @@ export default async function LandingPage() {
             <a href="#production" className="hover:text-white">Production</a>
             <a href="#inventory" className="hover:text-white">Inventory</a>
             <a href="#finance" className="hover:text-white">Finance</a>
-            <a href="#technology" className="hover:text-white">Technology</a>
+            <a href="#try-it" className="hover:text-white">Try it</a>
           </div>
           <Link href={cta.href} className="ml-auto inline-flex h-8 items-center rounded-md bg-white px-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200 md:ml-0">{cta.label}</Link>
         </nav>
@@ -189,13 +188,11 @@ export default async function LandingPage() {
           <p className="mt-4 flex items-center gap-2 text-xs text-zinc-500"><WifiOff className="size-3.5" /> Offline orders are queued on the device with a unique reference and synced exactly once.</p>
         </section>
 
-        <section id="technology" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24" aria-labelledby="tech-title">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">Technology</p>
-          <h2 id="tech-title" className="mt-3 text-3xl font-semibold tracking-tight text-white">Boring where it matters, modern where it helps</h2>
-          <p className="mt-3 max-w-2xl text-zinc-400">PostgreSQL transactions with row locks, unique keys and triggers guard the books. The 3D digital twin is plain Three.js, lazy-loaded, reads a database snapshot every 15 seconds, and falls back to a list without WebGL.</p>
-          <ul className="mt-8 flex flex-wrap gap-2">
-            {STACK.map((s) => <li key={s} className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-zinc-300">{s}</li>)}
-          </ul>
+        <section id="try-it" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-24" aria-labelledby="try-title">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400">Try it</p>
+          <h2 id="try-title" className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-white">Cost a batch of murukku, then bill a customer</h2>
+          <p className="mt-3 max-w-2xl text-zinc-400">Move the sliders to see what Sutra works out when a run is completed and an invoice is issued: variance flags against the ±3% tolerance, cost per good packet, and CGST + SGST or IGST depending on where the customer is. It starts at the assignment benchmark.</p>
+          <BatchLab />
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-24">
@@ -212,9 +209,6 @@ export default async function LandingPage() {
       <footer className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-xs text-zinc-500 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2"><BrandMark className="size-5" /> Sutra ERP: internship prototype. All companies, people and GSTINs are fictional.</div>
-          <div>
-            Hero background: <a className="underline underline-offset-2 hover:text-zinc-300" href="https://github.com/tengbao/vanta" target="_blank" rel="noopener noreferrer">Vanta.js</a> (MIT). Factory model built procedurally with Three.js.
-          </div>
         </div>
       </footer>
     </div>

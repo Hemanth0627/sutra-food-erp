@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BrandMark, BrandName } from "@/components/app/brand";
+import { BrandHero } from "@/components/login/brand-hero";
 import { getCurrentUser } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
 
@@ -15,11 +16,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden overflow-hidden bg-[#0c0c0d] p-10 text-zinc-100 lg:flex lg:flex-col">
-        <Link href="/" className="flex items-center gap-2.5">
+        <BrandHero />
+        <Link href="/" className="relative z-10 flex items-center gap-2.5">
           <BrandMark className="size-7" />
           <BrandName className="text-lg text-white" />
         </Link>
-        <div className="mt-auto max-w-md">
+        <div className="relative z-10 mt-auto max-w-md">
           <p className="text-[13px] font-medium uppercase tracking-[0.18em] text-amber-400">One entry. Every ledger.</p>
           <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight">From flour sack to GST invoice, every transaction flows through one inventory ledger.</h2>
           <ul className="mt-6 space-y-2 text-sm text-zinc-400">
@@ -28,8 +30,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <li>• CGST/SGST/IGST invoices, dispatch and receivables</li>
           </ul>
         </div>
-        <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full border border-amber-500/20" />
-        <div className="pointer-events-none absolute -right-10 -top-10 size-64 rounded-full border border-amber-500/10" />
       </section>
       <section className="flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">

@@ -119,7 +119,7 @@ See [DESIGN.md](DESIGN.md) for the ER diagram, the ledger posting algorithm, eve
 
 **Audit and security.** Each posting writes an audit entry inside the same transaction. Passwords are hashed with scrypt. Session tokens are stored only as HMAC hashes and expire after 12 hours. Failed logins are rate-limited and audited. State-changing requests require a same-origin check. Inputs are validated with Zod. Security headers are set. No secrets reach the client.
 
-**Landing page.** Built so a first-time visitor gets it fast: a one-sentence hero ("Sutra runs a snack factory, from flour sack to GST invoice"), a three-step *Sell → Make → Bill* strip, and a **1-minute factory tour** using the same 3D model as the live twin (click a department or press *Guided tour* for what happens there and which ERP records drive it). *Explore the live 3D factory* goes straight to sign-in and then to the live twin. The Vanta.js hero is lazy-loaded and skipped for reduced motion, missing WebGL or low-power devices.
+**Landing page.** Built so a first-time visitor gets it fast: a one-sentence hero ("Sutra runs a snack factory, from flour sack to GST invoice"), a three-step *Sell → Make → Bill* strip, and a **1-minute factory tour** using the same 3D model as the live twin (click a department or press *Guided tour* for what happens there and which ERP records drive it). A **Try it** calculator lets visitors change one batch (oil used, good packets, damaged pouches, labour, gas & power) and a sale (quantity, Tamil Nadu or Karnataka customer) and watch the variance flags, cost per good packet and the CGST + SGST or IGST invoice update; it runs the same `src/lib` costing, variance and GST functions as the ERP and starts at the benchmark (₹31.14, ₹7,875). *Explore the live 3D factory* goes straight to sign-in and then to the live twin. The **sign-in page** shows the Sutra mark in 3D (glossy tile, the two threads weaving over each other and the amber knot, with orbiting rings) that floats and tilts toward the pointer; it is lazy-loaded, still for reduced motion and a static logo without WebGL. The Vanta.js hero is lazy-loaded and skipped for reduced motion, missing WebGL or low-power devices.
 
 ## Features by role
 
@@ -336,15 +336,15 @@ prisma/
   seed.ts, seed/                fictional master data + benchmark scenario (runs through services)
 src/
   app/
-    page.tsx                    public landing page (hero, Sell → Make → Bill, 3D factory tour)
-    login/                      sign-in
+    page.tsx                    public landing page (hero, Sell → Make → Bill, 3D factory tour, Try-it calculator)
+    login/                      sign-in (3D Sutra mark: components/login)
     (app)/                      authenticated pages (dashboard, factory, orders, invoices, purchase-orders, production, bom, costing, reports, …)
     api/                        route handlers (one per command)
   components/
     ui/                         shadcn-style primitives
     app/, forms/, charts/       shell, widgets, React Hook Form forms, Recharts wrappers
     factory/                    3D digital twin: factory-scene.ts (Three.js), factory-props.ts (procedural machines), factory-twin.tsx (UI)
-    landing/                    Vanta hero, intro animation, WebGL/motion capability checks
+    landing/                    Vanta hero, intro animation, Try-it batch calculator, WebGL/motion capability checks
   lib/                          pure domain logic (decimal, gst, gstin, units, valuation, production, permissions, validation, factory status rules)
   server/
     services/                   business workflows (transactions)
